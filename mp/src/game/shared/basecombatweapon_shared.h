@@ -3,30 +3,33 @@
 // Purpose: 
 //
 //===========================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 18:34 19/01/2014
 #ifndef COMBATWEAPON_SHARED_H
 #define COMBATWEAPON_SHARED_H
 #ifdef _WIN32
 #pragma once
 #endif
 
-#include "sharedInterface.h"
+#include "sharedInterface.h" // BG2 - VisualMelon - Porting - Not in 2007 code base
 #include "vphysics_interface.h"
 #include "predictable_entity.h"
 #include "soundflags.h"
 #include "weapon_parse.h"
 #include "baseviewmodel_shared.h"
 #include "weapon_proficiency.h"
-#include "utlmap.h"
+#include "utlmap.h" // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 #if defined( CLIENT_DLL )
 #define CBaseCombatWeapon C_BaseCombatWeapon
 #endif
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 // Hacky
 #if defined ( TF_CLIENT_DLL ) || defined ( TF_DLL )
 #include "econ_entity.h"
 #endif // TF_CLIENT_DLL || TF_DLL
+// BG2 - VisualMelon - Porting - END
 
 #if !defined( CLIENT_DLL )
 extern void OnBaseCombatWeaponCreated( CBaseCombatWeapon * );
@@ -54,9 +57,14 @@ class CUserCmd;
 
 // Put this in your derived class definition to declare it's activity table
 // UNDONE: Cascade these?
+//BG2 - Tjoppen - DECLARE_ACTTABLE only on server..
+#ifndef CLIENT_DLL
 #define DECLARE_ACTTABLE()		static acttable_t m_acttable[];\
 	acttable_t *ActivityList( void );\
 	int ActivityListCount( void );
+#else
+#define DECLARE_ACTTABLE()
+#endif
 
 // You also need to include the activity table itself in your class' implementation:
 // e.g.
@@ -115,6 +123,10 @@ namespace vgui2
 #define VECTOR_CONE_15DEGREES		Vector( 0.13053, 0.13053, 0.13053 )
 #define VECTOR_CONE_20DEGREES		Vector( 0.17365, 0.17365, 0.17365 )
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented - pretty sure this has been down by former BG2 devs some other way
+// BG2 - VisualMelon - Porting - START
+/*
+
 //-----------------------------------------------------------------------------
 // Purpose: Base weapon class, shared on client and server
 //-----------------------------------------------------------------------------
@@ -148,6 +160,10 @@ private:
 	bool							m_bActive;
 
 };
+*/
+
+// BG2 - VisualMelon - Porting - Fair usage of this #def, no idea what ECONs is so but this in to keep everythinig happy
+#define BASECOMBATWEAPON_DERIVED_FROM CBaseAnimating
 
 //-----------------------------------------------------------------------------
 // Purpose: Client side rep of CBaseTFCombatWeapon 
@@ -162,9 +178,12 @@ public:
 
 							CBaseCombatWeapon();
 	virtual 				~CBaseCombatWeapon();
-
-	virtual bool			IsBaseCombatWeapon( void ) const { return true; }
-	virtual CBaseCombatWeapon *MyCombatWeaponPointer( void ) { return this; }
+	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//virtual bool			IsBaseCombatWeapon( void ) const { return true; }
+	//virtual CBaseCombatWeapon *MyCombatWeaponPointer( void ) { return this; }
+	// BG2 - VisualMelon - Porting - END
 
 	// A derived weapon class should return true here so that weapon sounds, etc, can
 	//  apply the proper filter
@@ -188,6 +207,20 @@ public:
 	virtual bool			CanBeSelected( void );
 	virtual bool			VisibleInWeaponSelection( void );
 	virtual bool			HasAmmo( void );
+	
+	//BG2 -Added for Iron Sights Testing. Credits to z33ky for the code. -HairyPotter
+	//Funcs
+	bool					IsIronsighted( void );
+	void					EnableIronsights( void );
+	void					DisableIronsights( void );
+
+	//Vars
+	Vector					GetIronsightPositionOffset( void ) const;
+	QAngle					GetIronsightAngleOffset( void ) const;
+	float					GetIronsightFOVOffset( void ) const;
+	CNetworkVar( bool, m_bIsIronsighted );
+	CNetworkVar( float, m_flIronsightedTime );
+	//
 
 	// Weapon Pickup For Player
 	virtual void			SetPickupTouch( void );
@@ -233,10 +266,13 @@ public:
 	virtual void			SetWeaponVisible( bool visible );
 	virtual bool			IsWeaponVisible( void );
 	virtual bool			ReloadOrSwitchWeapons( void );
-	virtual void			OnActiveStateChanged( int iOldState ) { return; }
-	virtual bool			HolsterOnDetach() { return false; }
-	virtual bool			IsHolstered(){ return false; }
-	virtual void			Detach() {}
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//virtual void			OnActiveStateChanged( int iOldState ) { return; }
+	//virtual bool			HolsterOnDetach() { return false; }
+	//virtual bool			IsHolstered(){ return false; }
+	//virtual void			Detach() {}
+	// BG2 - VisualMelon - Porting - END
 
 	// Weapon behaviour
 	virtual void			ItemPreFrame( void );					// called each frame by the player PreThink
@@ -248,11 +284,11 @@ public:
 																	// but they are out of ammo. The default implementation
 																	// either reloads, switches weapons, or plays an empty sound.
 
-	virtual bool			ShouldBlockPrimaryFire() { return false; }
+	//virtual bool			ShouldBlockPrimaryFire() { return false; } // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 #ifdef CLIENT_DLL
 	virtual void			CreateMove( float flInputSampleTime, CUserCmd *pCmd, const QAngle &vecOldViewAngles ) {}
-	virtual int				CalcOverrideModelIndex() OVERRIDE;
+	//virtual int				CalcOverrideModelIndex() OVERRIDE; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 #endif
 
 	virtual bool			IsWeaponZoomed() { return false; }		// Is this weapon in its 'zoomed in' mode?
@@ -263,11 +299,14 @@ public:
 	virtual void			AbortReload( void );
 	virtual bool			Reload( void );
 	bool					DefaultReload( int iClipSize1, int iClipSize2, int iActivity );
-	bool					ReloadsSingly( void ) const;
+	//bool					ReloadsSingly( void ) const; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
-	virtual bool			AutoFiresFullClip( void ) { return false; }
-	virtual bool			CanOverload( void ) { return false; }
-	virtual void			UpdateAutoFire( void );
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//virtual bool			AutoFiresFullClip( void ) { return false; }
+	//virtual bool			CanOverload( void ) { return false; }
+	//virtual void			UpdateAutoFire( void );
+	// BG2 - VisualMelon - Porting - END
 
 	// Weapon firing
 	virtual void			PrimaryAttack( void );						// do "+ATTACK"
@@ -332,7 +371,7 @@ public:
 	//All weapons can be picked up by NPCs by default
 	virtual bool			CanBePickedUpByNPCs( void ) { return true;	}
 
-	virtual int				GetSkinOverride() const { return -1; }
+	//virtual int				GetSkinOverride() const { return -1; } // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 public:
 
@@ -375,7 +414,9 @@ public:
 
 	int GetSecondaryAmmoCount() { return m_iSecondaryAmmoCount; }
 	void SetSecondaryAmmoCount( int count ) { m_iSecondaryAmmoCount = count; }
-
+	
+	//BG2 - Removing HL2 Hud Stuff. -HairyPotter
+	/*
 	virtual CHudTexture const	*GetSpriteActive( void ) const;
 	virtual CHudTexture const	*GetSpriteInactive( void ) const;
 	virtual CHudTexture const	*GetSpriteAmmo( void ) const;
@@ -384,6 +425,7 @@ public:
 	virtual CHudTexture const	*GetSpriteAutoaim( void ) const;
 	virtual CHudTexture const	*GetSpriteZoomedCrosshair( void ) const;
 	virtual CHudTexture const	*GetSpriteZoomedAutoaim( void ) const;
+	*/
 
 	virtual Activity		ActivityOverride( Activity baseAct, bool *pRequired );
 	virtual	acttable_t*		ActivityList( void ) { return NULL; }
@@ -391,7 +433,7 @@ public:
 
 	virtual void			Activate( void );
 
-	virtual bool ShouldUseLargeViewModelVROverride() { return false; }
+	// virtual bool ShouldUseLargeViewModelVROverride() { return false; } // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 public:
 // Server Only Methods
 #if !defined( CLIENT_DLL )
@@ -441,21 +483,23 @@ public:
 	void					InputHideWeapon( inputdata_t &inputdata );
 	void					Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
 
-	virtual CDmgAccumulator	*GetDmgAccumulator( void ) { return NULL; }
+	//virtual CDmgAccumulator	*GetDmgAccumulator( void ) { return NULL; } // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 // Client only methods
 #else
 
 	virtual void			BoneMergeFastCullBloat( Vector &localMins, Vector &localMaxs, const Vector &thisEntityMins, const Vector &thisEntityMaxs  ) const;
 
-	virtual bool			OnFireEvent( C_BaseViewModel *pViewModel, const Vector& origin, const QAngle& angles, int event, const char *options ) 
+	// BG2 - VisualMelon - Porting - 2007 code base has no ECONs nonsense, see replacement below
+	/*virtual bool			OnFireEvent( C_BaseViewModel *pViewModel, const Vector& origin, const QAngle& angles, int event, const char *options ) 
 	{ 
 #if defined USES_ECON_ITEMS
 		return BaseClass::OnFireEvent( pViewModel, origin, angles, event, options );
 #else
 		return false; 
 #endif
-	}
+	}*/
+	virtual bool			OnFireEvent( C_BaseViewModel *pViewModel, const Vector& origin, const QAngle& angles, int event, const char *options ) { return false; }
 
 	// Should this object cast shadows?
 	virtual ShadowType_t	ShadowCastType();
@@ -463,7 +507,7 @@ public:
 	virtual void			OnDataChanged( DataUpdateType_t updateType );
 	virtual void			OnRestore();
 
-	virtual void			RestartParticleEffect( void ) {}
+	//virtual void			RestartParticleEffect( void ) {} // // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	virtual void			Redraw(void);
 	virtual void			ViewModelDrawn( CBaseViewModel *pViewModel );
@@ -475,7 +519,7 @@ public:
 	
 	// Weapon state checking
 	virtual bool			IsCarriedByLocalPlayer( void );
-	virtual bool			ShouldDrawUsingViewModel( void );
+	//virtual bool			ShouldDrawUsingViewModel( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	virtual bool			IsActiveByLocalPlayer( void );
 
 	bool					IsBeingCarried() const;
@@ -501,16 +545,19 @@ public:
 
 	virtual void			GetToolRecordingState( KeyValues *msg );
 
-	virtual void			GetWeaponCrosshairScale( float &flScale ) { flScale = 1.f; }
-
-#if !defined USES_ECON_ITEMS
-	// Viewmodel overriding
-	virtual bool			ViewModel_IsTransparent( void ) { return IsTransparent(); }
-	virtual bool			ViewModel_IsUsingFBTexture( void ) { return UsesPowerOfTwoFrameBufferTexture(); }
-	virtual bool			IsOverridingViewmodel( void ) { return false; };
-	virtual int				DrawOverriddenViewmodel( C_BaseViewModel *pViewmodel, int flags ) { return 0; };
-	bool					WantsToOverrideViewmodelAttachments( void ) { return false; }
-#endif
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+//	virtual void			GetWeaponCrosshairScale( float &flScale ) { flScale = 1.f; }
+//
+//#if !defined USES_ECON_ITEMS
+//	// Viewmodel overriding
+//	virtual bool			ViewModel_IsTransparent( void ) { return IsTransparent(); }
+//	virtual bool			ViewModel_IsUsingFBTexture( void ) { return UsesPowerOfTwoFrameBufferTexture(); }
+//	virtual bool			IsOverridingViewmodel( void ) { return false; };
+//	virtual int				DrawOverriddenViewmodel( C_BaseViewModel *pViewmodel, int flags ) { return 0; };
+//	bool					WantsToOverrideViewmodelAttachments( void ) { return false; }
+//#endif
+	// BG2 - VisualMelon - Porting - END
 
 #endif // End client-only methods
 
@@ -519,23 +566,14 @@ public:
 	virtual bool			Lower( void ) { return false; }
 
 	virtual void			HideThink( void );
-	virtual bool			CanReload( void );
+	//virtual bool			CanReload( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 private:
 	typedef CHandle< CBaseCombatCharacter > CBaseCombatCharacterHandle;
 	CNetworkVar( CBaseCombatCharacterHandle, m_hOwner );				// Player carrying this weapon
 
 protected:
-#if defined ( TF_CLIENT_DLL ) || defined ( TF_DLL )
-	// Regulate crit frequency to reduce client-side seed hacking
-	void					AddToCritBucket( float flAmount );
-	void					RemoveFromCritBucket( float flAmount ) { m_flCritTokenBucket -= flAmount; }
-	bool					IsAllowedToWithdrawFromCritBucket( float flDamage );
-
-	float					m_flCritTokenBucket;
-	int						m_nCritChecks;
-	int						m_nCritSeedRequests;
-#endif // TF
+	// BG2 - VisualMelon - Porting - Deleted stuff marked TF
 
 public:
 
@@ -549,7 +587,21 @@ public:
 	// Weapon state
 	bool					m_bInReload;			// Are we in the middle of a reload;
 	bool					m_bFireOnEmpty;			// True when the gun is empty and the player is still holding down the attack key(s)
-	bool					m_bFiringWholeClip;		// Are we in the middle of firing the whole clip;
+	//bool					m_bFiringWholeClip;		// Are we in the middle of firing the whole clip; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	
+	//BG2 - Tjoppen - m_bDontAutoreload
+	bool					m_bDontAutoreload;
+	//
+	//BG2 - Tjoppen - m_bCantAbortReload
+	bool					m_bCantAbortReload;
+	//
+
+	//BG2 -Added for Iron Sights. Credits to z33ky for the code base. -HairyPotter
+	float					flIronsightFOVOffset;	
+	bool					m_bWeaponHasSights;
+	float					m_flNextDisableIronsights;	//BG2 - Tjoppen - the soonest time we're allowed to disable the sights
+	//
+
 	// Weapon art
 	CNetworkVar( int, m_iViewModelIndex );
 	CNetworkVar( int, m_iWorldModelIndex );
@@ -598,7 +650,7 @@ public:
 	float					m_flUnlockTime;
 	EHANDLE					m_hLocker;				// Who locked this weapon.
 
-	CNetworkVar( bool, m_bFlipViewModel );
+	//CNetworkVar( bool, m_bFlipViewModel ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	IPhysicsConstraint		*GetConstraint() { return m_pConstraint; }
 
@@ -617,7 +669,7 @@ private:
 #if !defined( CLIENT_DLL )
 
 	// Outputs
-protected:
+protected: // BG2 - VisualMelon - Porting - Not in 2007 code base
 	COutputEvent			m_OnPlayerUse;		// Fired when the player uses the weapon.
 	COutputEvent			m_OnPlayerPickup;	// Fired when the player picks up the weapon.
 	COutputEvent			m_OnNPCPickup;		// Fired when an NPC picks up the weapon.

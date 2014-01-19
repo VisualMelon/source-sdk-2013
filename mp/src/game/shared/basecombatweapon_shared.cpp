@@ -4,6 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 20:14 19/01/2014
 #include "cbase.h"
 #include "in_buttons.h"
 #include "engine/IEngineSound.h"
@@ -11,18 +12,20 @@
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 #include "physics_saverestore.h"
 #include "datacache/imdlcache.h"
-#include "activitylist.h"
+#include "activitylist.h" // BG2 - VisualMelon - Porting - Not in 2007 code base
+#include "ironsights.h"
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 // NVNT start extra includes
 #include "haptics/haptic_utils.h"
 #ifdef CLIENT_DLL
 	#include "prediction.h"
 #endif
 // NVNT end extra includes
+// BG2 - VisualMelon - Porting - END
 
-#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
-#include "tf_shareddefs.h"
-#endif
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF
 
 #if !defined( CLIENT_DLL )
 
@@ -34,6 +37,7 @@
 
 #ifdef HL2MP
 	#include "hl2mp_gamerules.h"
+	#include "hl2mp_player.h" //BG2 - HairyPotter
 #endif
 
 #endif
@@ -49,16 +53,49 @@
 
 #define HIDEWEAPON_THINK_CONTEXT			"BaseCombatWeapon_HideThink"
 
+//BG2 -Added for Iron Sights Testing. Credits to z33ky for the code. -HairyPotter
+#if defined( TWEAK_IRONSIGHTS )
+ConVar viewmodel_adjust_enabled( "viewmodel_adjust_enabled", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+ConVar viewmodel_adjust_forward( "viewmodel_adjust_forward", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+ConVar viewmodel_adjust_right( "viewmodel_adjust_right", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+ConVar viewmodel_adjust_up( "viewmodel_adjust_up", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+ConVar viewmodel_adjust_pitch( "viewmodel_adjust_pitch", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+ConVar viewmodel_adjust_yaw( "viewmodel_adjust_yaw", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+ConVar viewmodel_adjust_roll( "viewmodel_adjust_roll", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+ConVar viewmodel_adjust_fov( "viewmodel_adjust_fov", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
+#endif
+
+Vector CBaseCombatWeapon::GetIronsightPositionOffset( void ) const
+{
+#if defined( TWEAK_IRONSIGHTS )
+	if( viewmodel_adjust_enabled.GetBool() ) //Out of the way, you!
+		return Vector( viewmodel_adjust_forward.GetFloat(), viewmodel_adjust_right.GetFloat(), viewmodel_adjust_up.GetFloat() );
+#endif
+	return GetWpnData().vecIronsightPosOffset;
+}
+ 
+QAngle CBaseCombatWeapon::GetIronsightAngleOffset( void ) const
+{
+#if defined( TWEAK_IRONSIGHTS )
+	if( viewmodel_adjust_enabled.GetBool() ) //Out of the way, you!
+		return QAngle( viewmodel_adjust_pitch.GetFloat(), viewmodel_adjust_yaw.GetFloat(), viewmodel_adjust_roll.GetFloat() );
+#endif
+	return GetWpnData().angIronsightAngOffset;
+}
+ 
+float CBaseCombatWeapon::GetIronsightFOVOffset( void ) const
+{
+#if defined( TWEAK_IRONSIGHTS )
+	if( viewmodel_adjust_enabled.GetBool() ) //Out of the way, you!
+		return viewmodel_adjust_fov.GetFloat();
+#endif
+	return flIronsightFOVOffset; //Just do what the script says!
+}
+//
+
 extern bool UTIL_ItemCanBeTouchedByPlayer( CBaseEntity *pItem, CBasePlayer *pPlayer );
 
-#if defined ( TF_CLIENT_DLL ) || defined ( TF_DLL )
-#ifdef _DEBUG
-ConVar tf_weapon_criticals_force_random( "tf_weapon_criticals_force_random", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
-#endif // _DEBUG
-ConVar tf_weapon_criticals_bucket_cap( "tf_weapon_criticals_bucket_cap", "1000.0", FCVAR_REPLICATED | FCVAR_CHEAT );
-ConVar tf_weapon_criticals_bucket_bottom( "tf_weapon_criticals_bucket_bottom", "-250.0", FCVAR_REPLICATED | FCVAR_CHEAT );
-ConVar tf_weapon_criticals_bucket_default( "tf_weapon_criticals_bucket_default", "300.0", FCVAR_REPLICATED | FCVAR_CHEAT );
-#endif // TF
+// BG2 - VisualMelon - Porting - Deleted stuff marked  TF
 
 CBaseCombatWeapon::CBaseCombatWeapon()
 {
@@ -72,11 +109,19 @@ CBaseCombatWeapon::CBaseCombatWeapon()
 	m_fMaxRange2		= 1024;
 
 	m_bReloadsSingly	= false;
+	//BG2 - Tjoppen - default to no automatic reload
+	m_bDontAutoreload	= false;
+
+	//BG2 -Added for Iron Sights Testing. Credits to z33ky for the code. -HairyPotter
+	m_bIsIronsighted = false;
+	m_flIronsightedTime = 0.0f;
+	//
+	m_flNextDisableIronsights = 0;
 
 	// Defaults to zero
 	m_nViewModelIndex	= 0;
 
-	m_bFlipViewModel	= false;
+	//m_bFlipViewModel	= false; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 #if defined( CLIENT_DLL )
 	m_iState = m_iOldState = WEAPON_NOT_CARRIED;
@@ -93,15 +138,7 @@ CBaseCombatWeapon::CBaseCombatWeapon()
 
 	m_hWeaponFileInfo = GetInvalidWeaponInfoHandle();
 
-#if defined( TF_DLL )
-	UseClientSideAnimation();
-#endif
-
-#if defined ( TF_CLIENT_DLL ) || defined ( TF_DLL )
-	m_flCritTokenBucket = tf_weapon_criticals_bucket_default.GetFloat();
-	m_nCritChecks = 1;
-	m_nCritSeedRequests = 0;
-#endif // TF
+// BG2 - VisualMelon - Porting - Deleted stuff marked  TF
 }
 
 //-----------------------------------------------------------------------------
@@ -134,14 +171,14 @@ void CBaseCombatWeapon::Activate( void )
 		return;
 	}
 #endif
-
 }
+
 void CBaseCombatWeapon::GiveDefaultAmmo( void )
 {
 	// If I use clips, set my clips to the default
 	if ( UsesClipsForAmmo1() )
 	{
-		m_iClip1 = AutoFiresFullClip() ? 0 : GetDefaultClip1();
+		m_iClip1 = GetDefaultClip1();
 	}
 	else
 	{
@@ -248,15 +285,7 @@ void CBaseCombatWeapon::Precache( void )
 			{
 				Msg("ERROR: Weapon (%s) using undefined primary ammo type (%s)\n",GetClassname(), GetWpnData().szAmmo1);
 			}
- #if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
-			// Ammo override
-			int iModUseMetalOverride = 0;
-			CALL_ATTRIB_HOOK_INT( iModUseMetalOverride, mod_use_metal_ammo_type );
-			if ( iModUseMetalOverride )
-			{
-				m_iPrimaryAmmoType = (int)TF_AMMO_METAL;
-			}
-#endif
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF
  		}
 		if ( GetWpnData().szAmmo2[0] )
 		{
@@ -346,13 +375,7 @@ const char *CBaseCombatWeapon::GetPrintName( void ) const
 //-----------------------------------------------------------------------------
 int CBaseCombatWeapon::GetMaxClip1( void ) const
 {
-#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
-	int iModMaxClipOverride = 0;
-	CALL_ATTRIB_HOOK_INT( iModMaxClipOverride, mod_max_primary_clip_override );
-	if ( iModMaxClipOverride != 0 )
-		return iModMaxClipOverride;
-#endif
-
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF
 	return GetWpnData().iMaxClip1;
 }
 
@@ -459,6 +482,8 @@ const char *CBaseCombatWeapon::GetName( void ) const
 	return GetWpnData().szClassName;
 }
 
+//BG2 - Removing Hl2 Hud Stuff. -HairyPotter
+/*
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -522,6 +547,7 @@ CHudTexture const *CBaseCombatWeapon::GetSpriteZoomedAutoaim( void ) const
 {
 	return GetWpnData().iconZoomedAutoaim;
 }
+*/
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -536,7 +562,8 @@ const char *CBaseCombatWeapon::GetShootSound( int iIndex ) const
 //-----------------------------------------------------------------------------
 int CBaseCombatWeapon::GetRumbleEffect() const
 {
-	return GetWpnData().iRumbleEffect;
+	//return GetWpnData().iRumbleEffect;
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -553,19 +580,22 @@ CBaseCombatCharacter	*CBaseCombatWeapon::GetOwner() const
 //-----------------------------------------------------------------------------
 void CBaseCombatWeapon::SetOwner( CBaseCombatCharacter *owner )
 {
-	if ( !owner )
-	{ 
-#ifndef CLIENT_DLL
-		// Make sure the weapon updates its state when it's removed from the player
-		// We have to force an active state change, because it's being dropped and won't call UpdateClientData()
-		int iOldState = m_iState;
-		m_iState = WEAPON_NOT_CARRIED;
-		OnActiveStateChanged( iOldState );
-#endif
-
-		// make sure we clear out our HideThink if we have one pending
-		SetContextThink( NULL, 0, HIDEWEAPON_THINK_CONTEXT );
-	}
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+//	if ( !owner )
+//	{ 
+//#ifndef CLIENT_DLL
+//		// Make sure the weapon updates its state when it's removed from the player
+//		// We have to force an active state change, because it's being dropped and won't call UpdateClientData()
+//		int iOldState = m_iState;
+//		m_iState = WEAPON_NOT_CARRIED;
+//		OnActiveStateChanged( iOldState );
+//#endif
+//
+//		// make sure we clear out our HideThink if we have one pending
+//		SetContextThink( NULL, 0, HIDEWEAPON_THINK_CONTEXT );
+//	}
+	// BG2 - VisualMelon - Porting - END
 
 	m_hOwner = owner;
 	
@@ -649,6 +679,64 @@ void CBaseCombatWeapon::SetWeaponIdleTime( float time )
 float CBaseCombatWeapon::GetWeaponIdleTime( void )
 {
 	return m_flTimeWeaponIdle;
+}
+
+//BG2 -Added for Iron Sights Testing. Credits to z33ky for the code. -HairyPotter
+bool CBaseCombatWeapon::IsIronsighted( void )
+{
+	return ( m_bIsIronsighted  );
+}
+
+void CBaseCombatWeapon::EnableIronsights( void )
+{
+	if( m_bIsIronsighted )
+		return;
+ 
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+ 
+	if( !pOwner )
+		return;
+ 
+#ifndef CLIENT_DLL
+	if( !pOwner->SetFOV( this, pOwner->GetDefaultFOV()+GetIronsightFOVOffset(), IRONSIGHTS_FOV_IN_TIME ) ) //modify these values to adjust how fast the fov is applied
+		return;
+
+	if ( !m_iClip1 )
+		SendWeaponAnim( ACT_FORCE_STABLE_EMPTY ); //Dummy animation that will cancel out the idle anim.
+	else
+		SendWeaponAnim( ACT_FORCE_STABLE ); //Dummy animation that will cancel out the idle anim.
+
+	m_bIsIronsighted = true;
+	m_flIronsightedTime = gpGlobals->curtime;
+#endif
+
+	//delay both attacks, but make sure we don't roll back the attack times
+	m_flNextPrimaryAttack   = max(m_flNextPrimaryAttack,   gpGlobals->curtime + IRONSIGHTS_ATTACK_DELAY_IN);
+	m_flNextSecondaryAttack = max(m_flNextSecondaryAttack, gpGlobals->curtime + IRONSIGHTS_ATTACK_DELAY_IN);
+	m_flNextDisableIronsights = gpGlobals->curtime + IRONSIGHTS_ATTACK_DELAY_IN;
+}
+ 
+void CBaseCombatWeapon::DisableIronsights( void )
+{
+	if( !m_bIsIronsighted )
+		return;
+ 
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+ 
+	if( !pOwner )
+		return;
+ 
+#ifndef CLIENT_DLL
+	if( !pOwner->SetFOV( this, 0, IRONSIGHTS_FOV_OUT_TIME ) ) //modify these values to adjust how fast the fov is applied
+		return;
+
+	m_bIsIronsighted = false;
+	m_flIronsightedTime = gpGlobals->curtime;
+#endif
+
+	//delay both attacks, but make sure we don't roll back the attack times
+	m_flNextPrimaryAttack   = max(m_flNextPrimaryAttack,   gpGlobals->curtime + IRONSIGHTS_ATTACK_DELAY_OUT);
+	m_flNextSecondaryAttack = max(m_flNextSecondaryAttack, gpGlobals->curtime + IRONSIGHTS_ATTACK_DELAY_OUT);
 }
 
 //-----------------------------------------------------------------------------
@@ -802,10 +890,13 @@ void CBaseCombatWeapon::MakeTracer( const Vector &vecTracerSrc, const trace_t &t
 	}
 }
 
-void CBaseCombatWeapon::GiveTo( CBaseEntity *pOther )
-{
-	DefaultTouch( pOther );
-}
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//void CBaseCombatWeapon::GiveTo( CBaseEntity *pOther )
+//{
+//	DefaultTouch( pOther );
+//}
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: Default Touch function for player picking up a weapon (not AI)
@@ -814,7 +905,8 @@ void CBaseCombatWeapon::GiveTo( CBaseEntity *pOther )
 //-----------------------------------------------------------------------------
 void CBaseCombatWeapon::DefaultTouch( CBaseEntity *pOther )
 {
-#if !defined( CLIENT_DLL )
+//BG2 - Tjoppen - no weapon pickup
+/*#if !defined( CLIENT_DLL )
 	// Can't pick up dissolving weapons
 	if ( IsDissolving() )
 		return;
@@ -822,26 +914,14 @@ void CBaseCombatWeapon::DefaultTouch( CBaseEntity *pOther )
 	// if it's not a player, ignore
 	CBasePlayer *pPlayer = ToBasePlayer(pOther);
 	if ( !pPlayer )
-		return;
-
-	if( UTIL_ItemCanBeTouchedByPlayer(this, pPlayer) )
-	{
-		// This makes sure the player could potentially take the object
-		// before firing the cache interaction output. That doesn't mean
-		// the player WILL end up taking the object, but cache interactions
-		// are fired as soon as you prove you have found the object, not
-		// when you finally acquire it.
-		m_OnCacheInteraction.FireOutput( pOther, this );
-	}
-
-	if( HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP) )
-		return;
-
+				return;
+		
 	if (pPlayer->BumpWeapon(this))
 	{
 		OnPickedUp( pPlayer );
 	}
-#endif
+#endif*/
+//
 }
 
 //---------------------------------------------------------
@@ -1032,6 +1112,7 @@ void CBaseCombatWeapon::SetActivity( Activity act, float duration )
 
 		if ( duration > 0 )
 		{
+			// BG2 - VisualMelon - This looks pretty dodgy
 			// FIXME: does this even make sense in non-shoot animations?
 			m_flPlaybackRate = SequenceDuration( sequence ) / duration;
 			m_flPlaybackRate = MIN( m_flPlaybackRate, 12.0);  // FIXME; magic number!, network encoding range
@@ -1068,9 +1149,7 @@ int CBaseCombatWeapon::UpdateClientData( CBasePlayer *pPlayer )
 
 	if ( m_iState != iNewState )
 	{
-		int iOldState = m_iState;
 		m_iState = iNewState;
-		OnActiveStateChanged( iOldState );
 	}
 	return 1;
 }
@@ -1103,7 +1182,8 @@ void CBaseCombatWeapon::SendViewModelAnim( int nSequence )
 	
 	if ( pOwner == NULL )
 		return;
-	
+
+	// BG2 - VisualMelon - Porting - 2007 code has no second argument
 	CBaseViewModel *vm = pOwner->GetViewModel( m_nViewModelIndex, false );
 	
 	if ( vm == NULL )
@@ -1166,11 +1246,14 @@ void CBaseCombatWeapon::SetViewModel()
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	if ( pOwner == NULL )
 		return;
-	CBaseViewModel *vm = pOwner->GetViewModel( m_nViewModelIndex, false );
+	CBaseViewModel *vm = pOwner->GetViewModel( m_nViewModelIndex );
+	int WeaponSkin = pOwner->GetActiveWeapon()->m_nSkin; //BG2 - HACKHACK Sets the weapon skin for viewmodel -HairyPotter
+
 	if ( vm == NULL )
 		return;
 	Assert( vm->ViewModelIndex() == m_nViewModelIndex );
 	vm->SetWeaponModel( GetViewModel( m_nViewModelIndex ), this );
+	vm->m_nSkin = WeaponSkin; //BG2 - HACKHACK Sets the weapon skin for viewmodel - HairyPotter
 }
 
 //-----------------------------------------------------------------------------
@@ -1179,18 +1262,7 @@ void CBaseCombatWeapon::SetViewModel()
 //-----------------------------------------------------------------------------
 bool CBaseCombatWeapon::SendWeaponAnim( int iActivity )
 {
-#ifdef USES_ECON_ITEMS
-	iActivity = TranslateViewmodelHandActivity( (Activity)iActivity );
-#endif		
-	// NVNT notify the haptics system of this weapons new activity
-#ifdef WIN32
-#ifdef CLIENT_DLL
-	if ( prediction->InPrediction() && prediction->IsFirstTimePredicted() )
-#endif
-#ifndef _X360
-		HapticSendWeaponAnim(this,iActivity);
-#endif
-#endif
+	// BG2 - VisualMelon - Porting - more ECONs removed
 	//For now, just set the ideal activity and be done with it
 	return SetIdealActivity( (Activity) iActivity );
 }
@@ -1360,11 +1432,18 @@ bool CBaseCombatWeapon::ReloadOrSwitchWeapons( void )
 	else
 	{
 		// Weapon is useable. Reload if empty and weapon has waited as long as it has to after firing
-		if ( UsesClipsForAmmo1() && !AutoFiresFullClip() && 
+		//BG2 - Tjoppen - don't automatically reload
+		/*if ( UsesClipsForAmmo1() && 
 			 (m_iClip1 == 0) && 
 			 (GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD) == false && 
 			 m_flNextPrimaryAttack < gpGlobals->curtime && 
-			 m_flNextSecondaryAttack < gpGlobals->curtime )
+			 m_flNextSecondaryAttack < gpGlobals->curtime )*/
+		if ( UsesClipsForAmmo1() && 
+			 (m_iClip1 == 0) && 
+			 (GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD) == false && 
+			 m_flNextPrimaryAttack < gpGlobals->curtime && 
+			 m_flNextSecondaryAttack < gpGlobals->curtime &&
+			 !m_bDontAutoreload )
 		{
 			// if we're successfully reloading, we're done
 			if ( Reload() )
@@ -1391,6 +1470,11 @@ bool CBaseCombatWeapon::DefaultDeploy( char *szViewModel, char *szWeaponModel, i
 	// can still be deployed when they have no ammo.
 	if ( !HasAnyAmmo() && AllowsAutoSwitchFrom() )
 		return false;
+	
+	//BG2 - Tjoppen - make sure guns aren't deployed with ironsights enabled and that m_bInReload is false
+	//                the point of this is to make sure players never spawn unable to use the sights
+	DisableIronsights();
+	m_bInReload = false;
 
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	if ( pOwner )
@@ -1416,7 +1500,7 @@ bool CBaseCombatWeapon::DefaultDeploy( char *szViewModel, char *szWeaponModel, i
 	m_bReloadHudHintDisplayed = false;
 	m_flHudHintPollTime = gpGlobals->curtime + 5.0f;
 	
-	WeaponSound( DEPLOY );
+	//WeaponSound( DEPLOY ); // BG2 - VisualMelon - Porting - pretty sure BG2 does this it's own way
 
 	SetWeaponVisible( true );
 
@@ -1438,6 +1522,22 @@ selects and deploys each weapon as you pass it. (sjb)
 bool CBaseCombatWeapon::Deploy( )
 {
 	MDLCACHE_CRITICAL_SECTION();
+
+#if defined( TWEAK_IRONSIGHTS )
+	Vector vecIronsightPosOffset = GetIronsightPositionOffset();
+	QAngle angIronsightAngOffset = GetIronsightAngleOffset();
+
+	//BG2 - This is here to help test the viewmodel settings for Ironsights. -HairyPotter
+	viewmodel_adjust_forward.SetValue( vecIronsightPosOffset.x ); //Forward
+	viewmodel_adjust_right.SetValue( vecIronsightPosOffset.y ); //Right
+	viewmodel_adjust_up.SetValue( vecIronsightPosOffset.z ); //Up
+	viewmodel_adjust_pitch.SetValue( angIronsightAngOffset[PITCH] );
+	viewmodel_adjust_yaw.SetValue( angIronsightAngOffset[YAW] );
+	viewmodel_adjust_roll.SetValue( angIronsightAngOffset[ROLL] );
+	viewmodel_adjust_fov.SetValue( flIronsightFOVOffset );
+	//
+#endif
+
 	return DefaultDeploy( (char*)GetViewModel(), (char*)GetWorldModel(), GetDrawActivity(), (char*)GetAnimPrefix() );
 }
 
@@ -1450,12 +1550,24 @@ Activity CBaseCombatWeapon::GetDrawActivity( void )
 // Purpose: 
 //-----------------------------------------------------------------------------
 bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
-{ 
+{
+	//BG2 -Added for Iron Sights Testing. Credits to z33ky for the code. -HairyPotter
+	DisableIronsights();
+	//
+
+	CBaseCombatCharacter *pOwner = GetOwner();
+
+	//BG2 - Tjoppen - m_bCantAbortReload
+	if( m_bCantAbortReload && m_bInReload )
+		return false;
+	else if ( pOwner && m_bInReload )
+		pOwner->RemoveAmmo( 1, m_iPrimaryAmmoType ); //Let's just remove that shot from our ammo box. -HairyPotter
+	//
+
 	MDLCACHE_CRITICAL_SECTION();
 
 	// cancel any reload in progress.
 	m_bInReload = false; 
-	m_bFiringWholeClip = false;
 
 	// kill any think functions
 	SetThink(NULL);
@@ -1469,6 +1581,14 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	{
 		flSequenceDuration = SequenceDuration();
 	}
+
+#ifndef CLIENT_DLL
+	//BG2 - Play the player's holster animation - HairyPotter
+	if ( pOwner )
+	{
+		( ( CBasePlayer * )pOwner)->SetAnimation( PLAYER_HOLSTER );
+	}
+#endif
 
 	CBaseCombatCharacter *pOwner = GetOwner();
 	if (pOwner)
@@ -1541,65 +1661,20 @@ void CBaseCombatWeapon::HideThink( void )
 	}
 }
 
-bool CBaseCombatWeapon::CanReload( void )
-{
-	if ( AutoFiresFullClip() && m_bFiringWholeClip )
-	{
-		return false;
-	}
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//bool CBaseCombatWeapon::CanReload( void )
+//{
+//	if ( AutoFiresFullClip() && m_bFiringWholeClip )
+//	{
+//		return false;
+//	}
+//
+//	return true;
+//}
+// BG2 - VisualMelon - Porting - END
 
-	return true;
-}
-
-#if defined ( TF_CLIENT_DLL ) || defined ( TF_DLL )
-//-----------------------------------------------------------------------------
-// Purpose: Anti-hack
-//-----------------------------------------------------------------------------
-void CBaseCombatWeapon::AddToCritBucket( float flAmount )
-{
-	float flCap = tf_weapon_criticals_bucket_cap.GetFloat();
-
-	// Regulate crit frequency to reduce client-side seed hacking
-	if ( m_flCritTokenBucket < flCap )
-	{
-		// Treat raw damage as the resource by which we add or subtract from the bucket
-		m_flCritTokenBucket += flAmount;
-		m_flCritTokenBucket = Min( m_flCritTokenBucket, flCap );
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Anti-hack
-//-----------------------------------------------------------------------------
-bool CBaseCombatWeapon::IsAllowedToWithdrawFromCritBucket( float flDamage )
-{
-	// Note: If we're in this block of code, the assumption is that the
-	// seed said we should grant a random crit.  If allowed, the cost
-	// will be deducted here.
-
-	// Track each seed request - in cases where a player is hacking, we'll 
-	// see a silly ratio.
-	m_nCritSeedRequests++;
-
-	// Adjust token cost based on the ratio of requests vs granted, except
-	// melee, which crits much more than ranged (as high as 60% chance)
-	float flMult = ( IsMeleeWeapon() ) ? 0.5f : RemapValClamped( ( (float)m_nCritSeedRequests / (float)m_nCritChecks ), 0.1f, 1.f, 1.f, 3.f );
-
-	// Would this take us below our limit?
-	float flCost = ( flDamage * TF_DAMAGE_CRIT_MULTIPLIER ) * flMult;
-	if ( flCost > m_flCritTokenBucket )
-		return false;
-
-	// Withdraw
-	RemoveFromCritBucket( flCost );
-
-	float flBottom = tf_weapon_criticals_bucket_bottom.GetFloat();
-	if ( m_flCritTokenBucket < flBottom )
-		m_flCritTokenBucket = flBottom;
-
-	return true;
-}
-#endif // TF_DLL
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -1652,7 +1727,7 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 	if (!pOwner)
 		return;
 
-	UpdateAutoFire();
+	//UpdateAutoFire(); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	//Track the duration of the fire
 	//FIXME: Check for IN_ATTACK2 as well?
@@ -1694,7 +1769,8 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 			if( !IsX360() || !ClassMatches("weapon_crossbow") )
 #endif
 			{
-				bFired = ShouldBlockPrimaryFire();
+				bFired = true;
+				//bFired = ShouldBlockPrimaryFire(); // BG2 - VisualMelon - Porting - function not in 2007 code base
 			}
 
 			SecondaryAttack();
@@ -1716,6 +1792,9 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 	{
 		// Clip empty? Or out of ammo on a no-clip weapon?
 		if ( !IsMeleeWeapon() &&  
+			//BG2 - Tjoppen - IsMeleeWeapon doesn't work for some reason, so assume melee doesn't use ammo
+			m_iPrimaryAmmoType > -1 &&
+			// 
 			(( UsesClipsForAmmo1() && m_iClip1 <= 0) || ( !UsesClipsForAmmo1() && pOwner->GetAmmoCount(m_iPrimaryAmmoType)<=0 )) )
 		{
 			HandleFireOnEmpty();
@@ -1742,15 +1821,6 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 			}
 
 			PrimaryAttack();
-
-			if ( AutoFiresFullClip() )
-			{
-				m_bFiringWholeClip = true;
-			}
-
-#ifdef CLIENT_DLL
-			pOwner->SetFiredWeapon( true );
-#endif
 		}
 	}
 
@@ -1764,10 +1834,23 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 		m_fFireDuration = 0.0f;
 	}
 
+	//BG2 - only toggling ironsights only if we have them, we're not in a reload and we're not too soon after the last attack
+	if ( m_bWeaponHasSights && !m_bInReload )
+	{
+		if ( (pOwner->m_nButtons & IN_ZOOM) && gpGlobals->curtime > m_flNextPrimaryAttack && gpGlobals->curtime > m_flNextSecondaryAttack )
+		{
+			EnableIronsights();
+		}
+		else if ( !(pOwner->m_nButtons & IN_ZOOM) && gpGlobals->curtime > m_flNextDisableIronsights )
+		{
+			DisableIronsights();
+		}
+	}
+
 	// -----------------------
 	//  No buttons down
 	// -----------------------
-	if (!((pOwner->m_nButtons & IN_ATTACK) || (pOwner->m_nButtons & IN_ATTACK2) || (CanReload() && pOwner->m_nButtons & IN_RELOAD)))
+	if (!((pOwner->m_nButtons & IN_ATTACK) || (pOwner->m_nButtons & IN_ATTACK2) || (pOwner->m_nButtons & IN_RELOAD)))
 	{
 		// no fire buttons down or reloading
 		if ( !ReloadOrSwitchWeapons() && ( m_bInReload == false ) )
@@ -1801,7 +1884,7 @@ void CBaseCombatWeapon::HandleFireOnEmpty()
 //-----------------------------------------------------------------------------
 void CBaseCombatWeapon::ItemBusyFrame( void )
 {
-	UpdateAutoFire();
+	//UpdateAutoFire(); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 }
 
 //-----------------------------------------------------------------------------
@@ -1966,6 +2049,11 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	if ( pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0 )
 		return false;
 
+	//BG2 - Tjoppen - don't reload under water
+	if( pOwner->GetWaterLevel() > 2 )
+		return false;
+	//
+
 	bool bReload = false;
 
 	// If you don't have clips, then don't try to reload them.
@@ -1992,11 +2080,13 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	if ( !bReload )
 		return false;
 
-#ifdef CLIENT_DLL
+	//BG2 - Tjoppen - server side reload sound
+//#ifdef CLIENT_DLL
 	// Play reload
 	WeaponSound( RELOAD );
-#endif
+//#endif
 	SendWeaponAnim( iActivity );
+
 
 	// Play the player's reload animation
 	if ( pOwner->IsPlayer() )
@@ -2011,29 +2101,37 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 
 	m_bInReload = true;
 
+	//BG2 - Disable Iron sights on reload. -HairyPotter
+	if( m_bIsIronsighted )
+		DisableIronsights();
+	//
+
 	return true;
 }
 
-bool CBaseCombatWeapon::ReloadsSingly( void ) const
-{
-#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
-	float fHasReload = 1.0f;
-	CALL_ATTRIB_HOOK_FLOAT( fHasReload, mod_no_reload_display_only );
-	if ( fHasReload != 1.0f )
-	{
-		return false;
-	}
-
-	int iWeaponMod = 0;
-	CALL_ATTRIB_HOOK_INT( iWeaponMod, set_scattergun_no_reload_single );
-	if ( iWeaponMod == 1 )
-	{
-		return false;
-	}
-#endif // TF_DLL || TF_CLIENT_DLL
-
-	return m_bReloadsSingly;
-}
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//bool CBaseCombatWeapon::ReloadsSingly( void ) const
+//{
+//#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
+//	float fHasReload = 1.0f;
+//	CALL_ATTRIB_HOOK_FLOAT( fHasReload, mod_no_reload_display_only );
+//	if ( fHasReload != 1.0f )
+//	{
+//		return false;
+//	}
+//
+//	int iWeaponMod = 0;
+//	CALL_ATTRIB_HOOK_INT( iWeaponMod, set_scattergun_no_reload_single );
+//	if ( iWeaponMod == 1 )
+//	{
+//		return false;
+//	}
+//#endif // TF_DLL || TF_CLIENT_DLL
+//
+//	return m_bReloadsSingly;
+//}
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -2186,53 +2284,56 @@ void CBaseCombatWeapon::AbortReload( void )
 	m_bInReload = false;
 }
 
-void CBaseCombatWeapon::UpdateAutoFire( void )
-{
-	if ( !AutoFiresFullClip() )
-		return;
-
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-	if ( !pOwner )
-		return;
-
-	if ( m_iClip1 == 0 )
-	{
-		// Ready to reload again
-		m_bFiringWholeClip = false;
-	}
-
-	if ( m_bFiringWholeClip )
-	{
-		// If it's firing the clip don't let them repress attack to reload
-		pOwner->m_nButtons &= ~IN_ATTACK;
-	}
-
-	// Don't use the regular reload key
-	if ( pOwner->m_nButtons & IN_RELOAD )
-	{
-		pOwner->m_nButtons &= ~IN_RELOAD;
-	}
-
-	// Try to fire if there's ammo in the clip and we're not holding the button
-	bool bReleaseClip = m_iClip1 > 0 && !( pOwner->m_nButtons & IN_ATTACK );
-
-	if ( !bReleaseClip )
-	{
-		if ( CanReload() && ( pOwner->m_nButtons & IN_ATTACK ) )
-		{
-			// Convert the attack key into the reload key
-			pOwner->m_nButtons |= IN_RELOAD;
-		}
-
-		// Don't allow attack button if we're not attacking
-		pOwner->m_nButtons &= ~IN_ATTACK;
-	}
-	else
-	{
-		// Fake the attack key
-		pOwner->m_nButtons |= IN_ATTACK;
-	}
-}
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//void CBaseCombatWeapon::UpdateAutoFire( void )
+//{
+//	if ( !AutoFiresFullClip() )
+//		return;
+//
+//	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+//	if ( !pOwner )
+//		return;
+//
+//	if ( m_iClip1 == 0 )
+//	{
+//		// Ready to reload again
+//		m_bFiringWholeClip = false;
+//	}
+//
+//	if ( m_bFiringWholeClip )
+//	{
+//		// If it's firing the clip don't let them repress attack to reload
+//		pOwner->m_nButtons &= ~IN_ATTACK;
+//	}
+//
+//	// Don't use the regular reload key
+//	if ( pOwner->m_nButtons & IN_RELOAD )
+//	{
+//		pOwner->m_nButtons &= ~IN_RELOAD;
+//	}
+//
+//	// Try to fire if there's ammo in the clip and we're not holding the button
+//	bool bReleaseClip = m_iClip1 > 0 && !( pOwner->m_nButtons & IN_ATTACK );
+//
+//	if ( !bReleaseClip )
+//	{
+//		if ( CanReload() && ( pOwner->m_nButtons & IN_ATTACK ) )
+//		{
+//			// Convert the attack key into the reload key
+//			pOwner->m_nButtons |= IN_RELOAD;
+//		}
+//
+//		// Don't allow attack button if we're not attacking
+//		pOwner->m_nButtons &= ~IN_ATTACK;
+//	}
+//	else
+//	{
+//		// Fake the attack key
+//		pOwner->m_nButtons |= IN_ATTACK;
+//	}
+//}
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: Primary fire button attack
@@ -2358,7 +2459,9 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 	int nextSequence = FindTransitionSequence( GetSequence(), m_nIdealSequence, NULL );
 
 	// Don't use transitions when we're deploying
-	if ( ideal != ACT_VM_DRAW && IsWeaponVisible() && nextSequence != m_nIdealSequence )
+	//BG2 - Tjoppen - fixed for empty draw anim
+	//if ( ideal != ACT_VM_DRAW && IsWeaponVisible() && nextSequence != m_nIdealSequence )
+	if ( ideal != GetDrawActivity() && IsWeaponVisible() && nextSequence != m_nIdealSequence )
 	{
 		//Set our activity to the next transitional animation
 		SetActivity( ACT_TRANSITION );
@@ -2374,7 +2477,9 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 	}
 
 	//Set the next time the weapon will idle
-	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration() );
+	//BG2 - Tjoppen - don't idle immediately a.k.a. behave like HL1
+	//SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration() );
+	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration() + random->RandomFloat( 5.f, 15.f ) );
 	return true;
 }
 
@@ -2438,6 +2543,9 @@ Activity CBaseCombatWeapon::ActivityOverride( Activity baseAct, bool *pRequired 
 	return baseAct;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -2513,6 +2621,8 @@ void CDmgAccumulator::Process( void )
 	m_TargetsDmgInfo.Purge();
 }
 #endif // GAME_DLL
+*/
+// BG2 - VisualMelon - Porting - END
 
 #if defined( CLIENT_DLL )
 
@@ -2541,7 +2651,7 @@ BEGIN_PREDICTION_DATA( CBaseCombatWeapon )
 	DEFINE_PRED_FIELD( m_flTimeWeaponIdle, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_FIELD( m_bInReload, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bFireOnEmpty, FIELD_BOOLEAN ),
-	DEFINE_FIELD( m_bFiringWholeClip, FIELD_BOOLEAN ),
+	//DEFINE_FIELD( m_bFiringWholeClip, FIELD_BOOLEAN ), // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	DEFINE_FIELD( m_flNextEmptySoundTime, FIELD_FLOAT ),
 	DEFINE_FIELD( m_Activity, FIELD_INTEGER ),
 	DEFINE_FIELD( m_fFireDuration, FIELD_FLOAT ),
@@ -2704,6 +2814,9 @@ void* SendProxy_SendLocalWeaponDataTable( const SendProp *pProp, const void *pSt
 }
 REGISTER_SEND_PROXY_NON_MODIFIED_POINTER( SendProxy_SendLocalWeaponDataTable );
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 //-----------------------------------------------------------------------------
 // Purpose: Only send to non-local players
 //-----------------------------------------------------------------------------
@@ -2725,7 +2838,8 @@ void* SendProxy_SendNonLocalWeaponDataTable( const SendProp *pProp, const void *
 	return NULL;
 }
 REGISTER_SEND_PROXY_NON_MODIFIED_POINTER( SendProxy_SendNonLocalWeaponDataTable );
-
+*/
+// BG2 - VisualMelon - Porting - END
 #endif
 
 #if PREDICTION_ERROR_CHECK_LEVEL > 1
@@ -2767,7 +2881,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CBaseCombatWeapon, DT_LocalWeaponData )
 
 	SendPropInt( SENDINFO( m_nViewModelIndex ), VIEWMODEL_INDEX_BITS, SPROP_UNSIGNED ),
 
-	SendPropInt( SENDINFO( m_bFlipViewModel ) ),
+	//SendPropInt( SENDINFO( m_bFlipViewModel ) ), // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 #if defined( TF_DLL )
 	SendPropExclude( "DT_AnimTimeMustBeFirst" , "m_flAnimTime" ),
@@ -2781,7 +2895,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CBaseCombatWeapon, DT_LocalWeaponData )
 
 	RecvPropInt( RECVINFO( m_nViewModelIndex ) ),
 
-	RecvPropBool( RECVINFO( m_bFlipViewModel ) ),
+	//RecvPropBool( RECVINFO( m_bFlipViewModel ) ), // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 #endif
 END_NETWORK_TABLE()
@@ -2794,6 +2908,10 @@ BEGIN_NETWORK_TABLE(CBaseCombatWeapon, DT_BaseCombatWeapon)
 	SendPropModelIndex( SENDINFO(m_iWorldModelIndex) ),
 	SendPropInt( SENDINFO(m_iState ), 8, SPROP_UNSIGNED ),
 	SendPropEHandle( SENDINFO(m_hOwner) ),
+	//BG2 -Added for Iron Sights Testing. Credits to z33ky for the code. -HairyPotter
+	SendPropBool( SENDINFO( m_bIsIronsighted ) ),
+	SendPropFloat( SENDINFO( m_flIronsightedTime ) ),
+	//
 #else
 	RecvPropDataTable("LocalWeaponData", 0, 0, &REFERENCE_RECV_TABLE(DT_LocalWeaponData)),
 	RecvPropDataTable("LocalActiveWeaponData", 0, 0, &REFERENCE_RECV_TABLE(DT_LocalActiveWeaponData)),
@@ -2801,5 +2919,9 @@ BEGIN_NETWORK_TABLE(CBaseCombatWeapon, DT_BaseCombatWeapon)
 	RecvPropInt( RECVINFO(m_iWorldModelIndex)),
 	RecvPropInt( RECVINFO(m_iState )),
 	RecvPropEHandle( RECVINFO(m_hOwner ) ),
+	//BG2 -Added for Iron Sights Testing. Credits to z33ky for the code. -HairyPotter
+	RecvPropBool( RECVINFO( m_bIsIronsighted ) ),
+	RecvPropFloat( RECVINFO( m_flIronsightedTime ) ),
+	//
 #endif
 END_NETWORK_TABLE()

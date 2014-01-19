@@ -3,6 +3,7 @@
 // Purpose:		Player for HL2.
 //
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 17:50 19/01/2014
 
 #include "cbase.h"
 #include "vcollide_parse.h"
@@ -14,6 +15,12 @@
 #include "iviewrender_beams.h"			// flashlight beam
 #include "r_efx.h"
 #include "dlight.h"
+
+//BG2 - Include - HairyPotter
+#include "./bg2/bg2_hud_main.h"
+#include "ivieweffects.h"
+#include "shake.h"
+//
 
 // Don't alias here
 #if defined( CHL2MP_Player )
@@ -29,24 +36,56 @@ IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 	RecvPropInt( RECVINFO( m_iSpawnInterpCounter ) ),
 	RecvPropInt( RECVINFO( m_iPlayerSoundType) ),
 
-	RecvPropBool( RECVINFO( m_fIsWalking ) ),
+	//RecvPropBool( RECVINFO( m_fIsWalking ) ),
+
+	//BG2 - Tjoppen - send stamina via C_HL2MP_Player <=> DT_HL2MP_Player <=> CHL2MP_Player
+	RecvPropInt( RECVINFO( m_iStamina) ),
+	//
+	//BG2 - Tjoppen - m_iClass, m_iCurrentAmmoKit and m_iSpeedModifier are network vars
+	// BG2 - VisualMelon - m_iClassSkin is also network var
+	RecvPropInt( RECVINFO( m_iClass ) ), 
+	RecvPropInt( RECVINFO( m_iClassSkin ) ),
+	RecvPropInt( RECVINFO( m_iCurrentAmmoKit ) ), 
+	RecvPropInt( RECVINFO( m_iSpeedModifier ) ),
+	//
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA( C_HL2MP_Player )
-	DEFINE_PRED_FIELD( m_fIsWalking, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+	//DEFINE_PRED_FIELD( m_fIsWalking, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 END_PREDICTION_DATA()
 
-#define	HL2_WALK_SPEED 150
-#define	HL2_NORM_SPEED 190
-#define	HL2_SPRINT_SPEED 320
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//#define	HL2_WALK_SPEED 150
+//#define	HL2_NORM_SPEED 190
+//#define	HL2_SPRINT_SPEED 320
+// BG2 - VisualMelon - Porting - END
 
-static ConVar cl_playermodel( "cl_playermodel", "none", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_SERVER_CAN_EXECUTE, "Default Player Model");
-static ConVar cl_defaultweapon( "cl_defaultweapon", "weapon_physcannon", FCVAR_USERINFO | FCVAR_ARCHIVE, "Default Spawn Weapon");
+//BG2 - Models are set by the server through the class selection menu. -HairyPotter
+//static ConVar cl_playermodel( "cl_playermodel", "none", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_SERVER_CAN_EXECUTE, "Default Player Model");
+//static ConVar cl_defaultweapon( "cl_defaultweapon", "weapon_physcannon", FCVAR_USERINFO | FCVAR_ARCHIVE, "Default Spawn Weapon"); // BG2 - VisualMelon - Porting - Not in 2007 code base
+
+ConVar cl_ragdolldeathcam( "cl_ragdolldeathcam", "1", FCVAR_ARCHIVE, "Should the camera stick to the player's ragdoll for a few seconds on death?");
 
 void SpawnBlood (Vector vecSpot, const Vector &vecDir, int bloodColor, float flDamage);
 
+extern player_info_t sPlayerInfo;
+
 C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles( "C_HL2MP_Player::m_iv_angEyeAngles" )
 {
+	//BG2 - Reset last attack times each time a player enters the game. -HairyPotter
+	CHudBG2 *pHud = CHudBG2::GetInstance();
+	if ( pHud )
+	{
+		pHud->m_IsAttackerAccumulator.m_flLastAttack = 0;
+		pHud->m_IsVictimAccumulator.m_flLastAttack = 0;
+	}
+	//
+
+	//BG2 - Reset death cam time. -HairyPotter
+	m_DeathTime = gpGlobals->curtime;
+	//
+
 	m_iIDEntIndex = 0;
 	m_iSpawnInterpCounterCache = 0;
 
@@ -81,7 +120,7 @@ void C_HL2MP_Player::UpdateIDTarget()
 	// Clear old target and find a new one
 	m_iIDEntIndex = 0;
 
-	// don't show IDs in chase spec mode
+	// don't show IDs in chase spec mode //BG2 - Hmmm.. -HairyPotter
 	if ( GetObserverMode() == OBS_MODE_CHASE || 
 		 GetObserverMode() == OBS_MODE_DEATHCAM )
 		 return;
@@ -124,13 +163,15 @@ void C_HL2MP_Player::TraceAttack( const CTakeDamageInfo &info, const Vector &vec
 
 		if ( pAttacker )
 		{
-			if ( HL2MPRules()->IsTeamplay() && pAttacker->InSameTeam( this ) == true )
+			if ( pAttacker->InSameTeam( this ) == true )== true )
 				return;
 		}
 
 		if ( blood != DONT_BLEED )
 		{
-			SpawnBlood( vecOrigin, vecDir, blood, flDistance );// a little surface blood.
+			//BG2 - Tjoppen - serverside blood
+			//SpawnBlood( vecOrigin, vecDir, blood, flDistance );// a little surface blood.
+			//
 			TraceBleed( flDistance, vecDir, ptr, info.GetDamageType() );
 		}
 	}
@@ -172,6 +213,8 @@ CStudioHdr *C_HL2MP_Player::OnNewModel( void )
  */
 void C_HL2MP_Player::UpdateLookAt( void )
 {
+	//BG2 - This will disable the head turning on the models when another player gets near them. -HairyPotter
+	/*
 	// head yaw
 	if (m_headYawPoseParam < 0 || m_headPitchPoseParam < 0)
 		return;
@@ -219,10 +262,13 @@ void C_HL2MP_Player::UpdateLookAt( void )
 	m_flCurrentHeadPitch = ApproachAngle( desired, m_flCurrentHeadPitch, 130 * gpGlobals->frametime );
 	m_flCurrentHeadPitch = AngleNormalize( m_flCurrentHeadPitch );
 	SetPoseParameter( m_headPitchPoseParam, m_flCurrentHeadPitch );
+	*/
 }
 
 void C_HL2MP_Player::ClientThink( void )
 {
+	//BG2 - This will disable the head turning on the models when another player gets near them. -HairyPotter
+	/*
 	bool bFoundViewTarget = false;
 	
 	Vector vForward;
@@ -259,6 +305,7 @@ void C_HL2MP_Player::ClientThink( void )
 	{
 		m_vLookAtTarget = GetAbsOrigin() + vForward * 512;
 	}
+	*/
 
 	UpdateIDTarget();
 }
@@ -326,27 +373,29 @@ void C_HL2MP_Player::PreThink( void )
 	BaseClass::PreThink();
 
 	HandleSpeedChanges();
-
-	if ( m_HL2Local.m_flSuitPower <= 0.0f )
-	{
-		if( IsSprinting() )
-		{
-			StopSprinting();
-		}
-	}
+	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//if ( m_HL2Local.m_flSuitPower <= 0.0f )
+	//{
+	//	if( IsSprinting() )
+	//	{
+	//		StopSprinting();
+	//	}
+	//}
+	// BG2 - VisualMelon - Porting - END
 }
 
+//BG2 - Tjoppen - EyeAngles() for C_HL2MP_Player
 const QAngle &C_HL2MP_Player::EyeAngles()
 {
-	if( IsLocalPlayer() )
-	{
+	//if we're viewing through our own eyes we'll use the default behaviour
+	if( this == C_BasePlayer::GetLocalPlayer() ) // BG2 - VisualMelon - Porting - replaced call to IsLocalPlayer() with old condition
 		return BaseClass::EyeAngles();
-	}
 	else
-	{
-		return m_angEyeAngles;
-	}
+		return m_angEyeAngles;	//spectating or otherwise using someone else. use predicted angle
 }
+//
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -467,8 +516,10 @@ bool C_HL2MP_Player::ShouldDraw( void )
 	if ( !IsAlive() )
 		return false;
 
-//	if( GetTeamNumber() == TEAM_SPECTATOR )
-//		return false;
+	//BG2 - Tjoppen - reenable spectators
+	if( GetTeamNumber() == TEAM_SPECTATOR )
+		return false;
+	//
 
 	if( IsLocalPlayer() && IsRagdoll() )
 		return true;
@@ -558,7 +609,9 @@ Vector C_HL2MP_Player::GetAutoaimVector( float flDelta )
 //-----------------------------------------------------------------------------
 bool C_HL2MP_Player::CanSprint( void )
 {
-	return ( (!m_Local.m_bDucked && !m_Local.m_bDucking) && (GetWaterLevel() != 3) );
+	//BG2 - Tjoppen - disable sprinting
+	return false;
+	//return ( (!m_Local.m_bDucked && !m_Local.m_bDucking) && (GetWaterLevel() != 3) );
 }
 
 
@@ -566,22 +619,25 @@ bool C_HL2MP_Player::CanSprint( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StartSprinting( void )
 {
-	if( m_HL2Local.m_flSuitPower < 10 )
-	{
-		// Don't sprint unless there's a reasonable
-		// amount of suit power.
-		CPASAttenuationFilter filter( this );
-		filter.UsePredictionRules();
-		EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
-		return;
-	}
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//if( m_HL2Local.m_flSuitPower < 10 )
+	//{
+	//	// Don't sprint unless there's a reasonable
+	//	// amount of suit power.
+	//	CPASAttenuationFilter filter( this );
+	//	filter.UsePredictionRules();
+	//	EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
+	//	return;
+	//}
 
-	CPASAttenuationFilter filter( this );
-	filter.UsePredictionRules();
-	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
+	//CPASAttenuationFilter filter( this );
+	//filter.UsePredictionRules();
+	//EmitSound( filter, entindex(), "HL2Player.SprintStart" );
 
-	SetMaxSpeed( HL2_SPRINT_SPEED );
-	m_fIsSprinting = true;
+	//SetMaxSpeed( HL2_SPRINT_SPEED );
+	//m_fIsSprinting = true;
+	// BG2 - VisualMelon - Porting - END
 }
 
 
@@ -589,71 +645,85 @@ void C_HL2MP_Player::StartSprinting( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StopSprinting( void )
 {
-	SetMaxSpeed( HL2_NORM_SPEED );
-	m_fIsSprinting = false;
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//SetMaxSpeed( HL2_NORM_SPEED );
+	//m_fIsSprinting = false;
+	// BG2 - VisualMelon - Porting - END
 }
 
 void C_HL2MP_Player::HandleSpeedChanges( void )
 {
-	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
+	SetMaxSpeed( GetCurrentSpeed() );
+	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
 
-	if( buttonsChanged & IN_SPEED )
-	{
-		// The state of the sprint/run button has changed.
-		if ( IsSuitEquipped() )
-		{
-			if ( !(m_afButtonPressed & IN_SPEED)  && IsSprinting() )
-			{
-				StopSprinting();
-			}
-			else if ( (m_afButtonPressed & IN_SPEED) && !IsSprinting() )
-			{
-				if ( CanSprint() )
-				{
-					StartSprinting();
-				}
-				else
-				{
-					// Reset key, so it will be activated post whatever is suppressing it.
-					m_nButtons &= ~IN_SPEED;
-				}
-			}
-		}
-	}
-	else if( buttonsChanged & IN_WALK )
-	{
-		if ( IsSuitEquipped() )
-		{
-			// The state of the WALK button has changed. 
-			if( IsWalking() && !(m_afButtonPressed & IN_WALK) )
-			{
-				StopWalking();
-			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
-			{
-				StartWalking();
-			}
-		}
-	}
+	//if( buttonsChanged & IN_SPEED )
+	//{
+	//	// The state of the sprint/run button has changed.
+	//	if ( IsSuitEquipped() )
+	//	{
+	//		if ( !(m_afButtonPressed & IN_SPEED)  && IsSprinting() )
+	//		{
+	//			StopSprinting();
+	//		}
+	//		else if ( (m_afButtonPressed & IN_SPEED) && !IsSprinting() )
+	//		{
+	//			if ( CanSprint() )
+	//			{
+	//				StartSprinting();
+	//			}
+	//			else
+	//			{
+	//				// Reset key, so it will be activated post whatever is suppressing it.
+	//				m_nButtons &= ~IN_SPEED;
+	//			}
+	//		}
+	//	}
+	//}
+	//else if( buttonsChanged & IN_WALK )
+	//{
+	//	if ( IsSuitEquipped() )
+	//	{
+	//		// The state of the WALK button has changed. 
+	//		if( IsWalking() && !(m_afButtonPressed & IN_WALK) )
+	//		{
+	//			StopWalking();
+	//		}
+	//		else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+	//		{
+	//			StartWalking();
+	//		}
+	//	}
+	//}
 
-	if ( IsSuitEquipped() && m_fIsWalking && !(m_nButtons & IN_WALK)  ) 
-		StopWalking();
+	//if ( IsSuitEquipped() && m_fIsWalking && !(m_nButtons & IN_WALK)  ) 
+	//	StopWalking();
+	// BG2 - VisualMelon - Porting - END
 }
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StartWalking( void )
 {
-	SetMaxSpeed( HL2_WALK_SPEED );
-	m_fIsWalking = true;
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//SetMaxSpeed( HL2_WALK_SPEED );
+	//m_fIsWalking = true;
+	// BG2 - VisualMelon - Porting - END
 }
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StopWalking( void )
 {
-	SetMaxSpeed( HL2_NORM_SPEED );
-	m_fIsWalking = false;
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//SetMaxSpeed( HL2_NORM_SPEED );
+	//m_fIsWalking = false;
+	// BG2 - VisualMelon - Porting - END
 }
 
 void C_HL2MP_Player::ItemPreFrame( void )
@@ -662,11 +732,12 @@ void C_HL2MP_Player::ItemPreFrame( void )
 		 return;
 
 	// Disallow shooting while zooming
-	if ( m_nButtons & IN_ZOOM )
+	//BG2 - Tjoppen - Allow shooting while zooming
+	/*if ( m_nButtons & IN_ZOOM )
 	{
 		//FIXME: Held weapons like the grenade get sad when this happens
 		m_nButtons &= ~(IN_ATTACK|IN_ATTACK2);
-	}
+	}*/
 
 	BaseClass::ItemPreFrame();
 
@@ -689,43 +760,25 @@ C_BaseAnimating *C_HL2MP_Player::BecomeRagdollOnClient()
 
 void C_HL2MP_Player::CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov )
 {
-	if ( m_lifeState != LIFE_ALIVE && !IsObserver() )
+	//BG2 - Tjoppen - reenable spectators
+	//BG2 - Have camera follow the player's eyes immediately after death, then go spec after a short while. -HairyPotter
+	if ( m_lifeState != LIFE_ALIVE && cl_ragdolldeathcam.GetBool() && m_DeathTime > gpGlobals->curtime )
 	{
-		Vector origin = EyePosition();			
+		Vector origin;
+		QAngle vecAngle;
 
-		IRagdoll *pRagdoll = GetRepresentativeRagdoll();
-
-		if ( pRagdoll )
-		{
-			origin = pRagdoll->GetRagdollOrigin();
-			origin.z += VEC_DEAD_VIEWHEIGHT_SCALED( this ).z; // look over ragdoll, not through
-		}
+		CBaseEntity *pDoll = static_cast<CBaseEntity *>( m_hRagdoll.Get() );
+		if ( pDoll )
+			pDoll->GetAttachment( pDoll->LookupAttachment( "eyes" ), origin, vecAngle );
 
 		BaseClass::CalcView( eyeOrigin, eyeAngles, zNear, zFar, fov );
 
 		eyeOrigin = origin;
-		
-		Vector vForward; 
-		AngleVectors( eyeAngles, &vForward );
-
-		VectorNormalize( vForward );
-		VectorMA( origin, -CHASE_CAM_DISTANCE_MAX, vForward, eyeOrigin );
-
-		Vector WALL_MIN( -WALL_OFFSET, -WALL_OFFSET, -WALL_OFFSET );
-		Vector WALL_MAX( WALL_OFFSET, WALL_OFFSET, WALL_OFFSET );
-
-		trace_t trace; // clip against world
-		C_BaseEntity::PushEnableAbsRecomputations( false ); // HACK don't recompute positions while doing RayTrace
-		UTIL_TraceHull( origin, eyeOrigin, WALL_MIN, WALL_MAX, MASK_SOLID_BRUSHONLY, this, COLLISION_GROUP_NONE, &trace );
-		C_BaseEntity::PopEnableAbsRecomputations();
-
-		if (trace.fraction < 1.0)
-		{
-			eyeOrigin = trace.endpos;
-		}
+		eyeAngles = vecAngle;
 		
 		return;
 	}
+	//
 
 	BaseClass::CalcView( eyeOrigin, eyeAngles, zNear, zFar, fov );
 }
@@ -827,12 +880,18 @@ void C_HL2MPRagdoll::ImpactTrace( trace_t *pTrace, int iDamageType, const char *
 		pPhysicsObject->ApplyForceOffset( dir, hitpos );	
 
 		// Blood spray!
-//		FX_CS_BloodSpray( hitpos, dir, 10 );
+		//BG2 - Tjoppen - do simple blood decals on ragdolls
+		UTIL_DecalTrace( pTrace, "Impact.Flesh" );
+		//
+		//FX_BloodSpray( hitpos, dir, 10 );
 	}
 
 	m_pRagdoll->ResetRagdollSleepAfterTime();
 }
 
+//BG2 - Skillet - Ragdoll control CVARs
+ConVar cl_ragdoll_maxcount( "cl_ragdoll_maxcount", "-1", FCVAR_ARCHIVE, "Positive number sets the maximum number of player ragdolls. \n Negative numbers: No limit, ragdolls will still be only one per player." );
+ConVar cl_ragdoll_staytime( "cl_ragdoll_staytime", "-1", FCVAR_ARCHIVE, "Positive non-zero number sets the maximum time in seconds before a ragdoll is removed. \n Negative numbers: No time limit." );
 
 void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 {
@@ -844,6 +903,9 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	{
 		// move my current model instance to the ragdoll's so decals are preserved.
 		pPlayer->SnatchModelInstance( this );
+		
+		if ( pPlayer->m_nSkin )
+			m_nSkin = pPlayer->m_nSkin; //BG2 - Set the proper skin for ragdolls. -HairyPotter
 
 		VarMapping_t *varMap = GetVarMapping();
 
@@ -882,6 +944,28 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 			SetCycle( 0.0 );
 
 			Interp_Reset( varMap );
+
+			//BG2 - Fade out when you die, unless you've disabled the ragdoll death cam. -HairyPotter
+			//HACK - Usually when a person spawns within a tenth of a second of dying: CreateHL2MPRagdoll) is called AFTER CBasePlayer::Spawn();
+			//Basically we have to check to see if the player is already alive, so we don't do the fade.
+			if( cl_ragdolldeathcam.GetBool() && !pPlayer->IsAlive() )
+			{
+				float duration = RandomFloat( 1.5, 2.0 );
+		
+				ScreenFade_t sf;
+				memset( &sf, 0, sizeof( sf ) );
+				sf.a = 255;
+				sf.r = 0;
+				sf.g = 0;
+				sf.b = 0;
+				sf.duration = (float)(1<<SCREENFADE_FRACBITS) * duration;
+				sf.holdTime = (float)(1<<SCREENFADE_FRACBITS) * 1.0f;
+				sf.fadeFlags = FFADE_OUT | FFADE_PURGE;
+				vieweffects->Fade( sf );
+
+				pPlayer->m_DeathTime = gpGlobals->curtime + duration + 1.0f;
+			}
+			//
 		}		
 	}
 	else
@@ -917,6 +1001,41 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	}
 
 	InitAsClientRagdoll( boneDelta0, boneDelta1, currentBones, boneDt );
+
+
+	//BG2 - This is another great HACK that detects if Spawn() was already called before the ragdoll was created. 
+	//If we're already alive, force our last position onto the ragdoll. This will mke the ragdoll flip out a little,
+	//but at least it's not spawning out of the player's ass when they (the player) spawn.
+	if ( pPlayer && pPlayer->IsAlive() )
+	{
+		CRagdoll *ragdoll = dynamic_cast< CRagdoll * >( GetIRagdoll() );
+		if ( ragdoll )
+			ragdoll->SetRagdollOrigin( m_vecRagdollOrigin, GetAbsAngles() );
+	}
+
+	//BG2 - Skillet - Add this ragdoll to the bottom of our list
+	HL2MPRules()->m_hRagdollList.AddToHead( this );
+
+	if ( cl_ragdoll_staytime.GetInt() > 0 )
+	{
+		SetNextClientThink( gpGlobals->curtime + cl_ragdoll_staytime.GetInt() );
+	}
+
+	//BG2 - Skillet - If we've got more ragdolls than allowed, remove the oldest one until we get down to an acceptable number
+	if ( cl_ragdoll_maxcount.GetInt() >= 0 )
+	{
+		while ( HL2MPRules()->m_hRagdollList.Count() > cl_ragdoll_maxcount.GetInt() )
+		{
+			//Remove the ragdoll on the top of the list (oldest one)
+			int iLastIndex = HL2MPRules()->m_hRagdollList.Count() - 1;
+			if ( HL2MPRules()->m_hRagdollList.IsValidIndex( iLastIndex ) )
+			{
+				C_HL2MPRagdoll* Ragdoll = HL2MPRules()->m_hRagdollList.Element( iLastIndex );
+				if ( Ragdoll )
+					Ragdoll->Remove();
+			}
+		}
+	}
 }
 
 
@@ -940,6 +1059,11 @@ void C_HL2MPRagdoll::UpdateOnRemove( void )
 	VPhysicsSetObject( NULL );
 
 	BaseClass::UpdateOnRemove();
+}
+//BG2 - Skillet
+void C_HL2MPRagdoll::ClientThink( void )
+{
+	Remove();
 }
 
 //-----------------------------------------------------------------------------
@@ -976,10 +1100,13 @@ void C_HL2MPRagdoll::SetupWeights( const matrix3x4_t *pBoneToWorld, int nFlexWei
 	}
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
 void C_HL2MP_Player::PostThink( void )
 {
-	BaseClass::PostThink();
+	//BaseClass::PostThink();
 
-	// Store the eye angles pitch so the client can compute its animation state correctly.
-	m_angEyeAngles = EyeAngles();
+	//// Store the eye angles pitch so the client can compute its animation state correctly.
+	//m_angEyeAngles = EyeAngles();
 }
+// BG2 - VisualMelon - Porting - END

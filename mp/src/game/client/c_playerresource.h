@@ -4,6 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 18:00 19/01/2014
 
 #ifndef C_PLAYERRESOURCE_H
 #define C_PLAYERRESOURCE_H
@@ -16,8 +17,11 @@
 #include "c_baseentity.h"
 #include <igameresources.h>
 
-#define PLAYER_UNCONNECTED_NAME	"unconnected"
-#define PLAYER_ERROR_NAME		"ERRORNAME"
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//#define PLAYER_UNCONNECTED_NAME	"unconnected"
+//#define PLAYER_ERROR_NAME		"ERRORNAME"
+// BG2 - VisualMelon - Porting - END
 
 class C_PlayerResource : public C_BaseEntity, public IGameResources
 {
@@ -42,7 +46,7 @@ public : // IGameResources intreface
 	virtual bool	IsFakePlayer( int index );
 	virtual bool	IsLocalPlayer( int index  );
 	virtual bool	IsHLTV(int index);
-	virtual bool	IsReplay(int index);
+	virtual bool	IsReplay(int index); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	virtual const char *GetPlayerName( int index );
 	virtual int		GetPing( int index );
@@ -70,7 +74,7 @@ protected:
 	bool	m_bAlive[MAX_PLAYERS+1];
 	int		m_iHealth[MAX_PLAYERS+1];
 	Color	m_Colors[MAX_TEAMS];
-	string_t m_szUnconnectedName;
+	string_t m_szUnconnectedName; // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 };
 

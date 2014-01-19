@@ -1,3 +1,35 @@
+/*
+	The Battle Grounds 2 - A Source modification
+	Copyright (C) 2005, The Battle Grounds 2 Team and Contributors
+
+	The Battle Grounds 2 free software; you can redistribute it and/or
+	modify it under the terms of the GNU Lesser General Public
+	License as published by the Free Software Foundation; either
+	version 2.1 of the License, or (at your option) any later version.
+
+	The Battle Grounds 2 is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	Lesser General Public License for more details.
+
+	You should have received a copy of the GNU Lesser General Public
+	License along with this library; if not, write to the Free Software
+	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+	Contact information:
+		Tomas "Tjoppen" Härdin		mail, in reverse: se . gamedev @ tjoppen
+
+	You may also contact the (future) team via the Battle Grounds website and/or forum at:
+		www.bgmod.com
+
+	 Note that because of the sheer volume of files in the Source SDK this
+	notice cannot be put in all of them, but merely the ones that have any
+	changes from the original SDK.
+	 In order to facilitate easy searching, all changes are and must be
+	commented on the following form:
+
+	//BG2 - <name of contributer>[ - <small description>]
+*/
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
@@ -10,6 +42,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 16:51 19/01/2014
 
 #ifndef HL2MP_GAMERULES_H
 #define HL2MP_GAMERULES_H
@@ -23,13 +56,42 @@
 #include "hl2mp_player.h"
 #endif
 
+//BG2 - Skillet - For ragdoll removal stuff
+#ifdef CLIENT_DLL
+	#include "c_hl2mp_player.h"
+#endif
+
+
 #define VEC_CROUCH_TRACE_MIN	HL2MPRules()->GetHL2MPViewVectors()->m_vCrouchTraceMin
 #define VEC_CROUCH_TRACE_MAX	HL2MPRules()->GetHL2MPViewVectors()->m_vCrouchTraceMax
 
+extern ConVar mp_respawnstyle, mp_respawntime, mp_tickets_roundtime, mp_tickets_a, mp_tickets_b;
+
 enum
 {
-	TEAM_COMBINE = 2,
-	TEAM_REBELS,
+	TEAM_AMERICANS = 2,
+	TEAM_BRITISH,
+	//BG2 - Tjoppen - NUM_TEAMS is useful
+	NUM_TEAMS,	//!! must be last !!
+};
+
+enum
+{
+	ROUND_DRAW = 1,
+	MAP_DRAW,
+	DEFAULT_DRAW,
+	BRITISH_ROUND_WIN,
+	AMERICAN_ROUND_WIN,
+	BRITISH_MAP_WIN,
+	AMERICAN_MAP_WIN,
+	BRITISH_DEFAULT_WIN,
+	AMERICAN_DEFAULT_WIN,
+	CTF_DENY_CAPTURE,
+	CTF_DENY_PICKUP,
+	CTF_CAPTURE,
+	CTF_PICKUP,
+	CTF_DROP,
+	CTF_RETURNED,
 };
 
 
@@ -94,6 +156,9 @@ public:
 #endif
 	
 	CHL2MPRules();
+
+	void ResetMap(); //-BG2
+
 	virtual ~CHL2MPRules();
 
 	virtual void Precache( void );
@@ -117,7 +182,7 @@ public:
 	const HL2MPViewVectors* GetHL2MPViewVectors() const;
 
 	float GetMapRemainingTime();
-	void CleanUpMap();
+	void CleanUpMap(); // BG2 - VisualMelon - Porting - Not in 2007 code base
 	void CheckRestartGame();
 	void RestartGame();
 	
@@ -133,6 +198,12 @@ public:
 	void	ManageObjectRelocation( void );
 	void    CheckChatForReadySignal( CHL2MP_Player *pPlayer, const char *chatmsg );
 	const char *GetChatFormat( bool bTeamOnly, CBasePlayer *pPlayer );
+	
+	//BG2 - This should handle all the score settings after each round, and also fire any triggers and play win music. -HairyPotter
+	void HandleScores( int iTeam, int iScore, int msg_type, bool bRestart );
+#else
+	//BG2 - Skillet - List of player ragdolls
+	CUtlVector<C_HL2MPRagdoll*> m_hRagdollList;
 
 #endif
 	virtual void ClientDisconnected( edict_t *pClient );
@@ -143,14 +214,37 @@ public:
 	void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info );
 
 	
-	bool	IsTeamplay( void ) { return m_bTeamPlayEnabled;	}
+	//bool	IsTeamplay( void ) { return m_bTeamPlayEnabled;	} //BG2 - Don't need it anymore. Always assume teamplay, because BG2 requires it anyway. -HairyPotter
 	void	CheckAllPlayersReady( void );
 
-	virtual bool IsConnectedUserInfoChangeAllowed( CBasePlayer *pPlayer );
+	virtual bool IsConnectedUserInfoChangeAllowed( CBasePlayer *pPlayer ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 	
+	/**
+	 * Current round, when UsingTickets().
+	 * 1-based, so runs from 1 up to mp_tickets_rounds.
+	 */
+	CNetworkVar( int, m_iCurrentRound );
+
+	//BG2 - Draco - Start
+	CNetworkVar( float, m_fLastRespawnWave );
+	CNetworkVar( float, m_fLastRoundRestart );
+	float m_fNextGameReset;
+	float m_fNextRoundReset;
+	//float m_fEndRoundTime;	//use m_fLastRespawnWave + mp_respawntime.GetFloat() instead
+	float m_fNextFlagUpdate;
+	//BG2 - Draco - End
+	//BG2 - Tjoppen - restart rounds a few seconds after the last person is killed. and other stuff
+	float	m_flNextRoundRestart;
+	bool	m_bIsRestartingRound;
+	int		m_iTDMTeamThatWon, m_iAmericanDmg, m_iBritishDmg; //BG2 - HairyPotter
+	bool	m_bHasDoneWinSong, m_bHasLoggedScores;
+	float	m_fNextWinSong;
+	//
+	//CNetworkVar( int, m_iWaveTime );
+
 private:
 	
-	CNetworkVar( bool, m_bTeamPlayEnabled );
+	//CNetworkVar( bool, m_bTeamPlayEnabled );
 	CNetworkVar( float, m_flGameStartTime );
 	CUtlVector<EHANDLE> m_hRespawnableItemsAndWeapons;
 	float m_tmNextPeriodicThink;
@@ -159,9 +253,49 @@ private:
 	bool m_bAwaitingReadyRestart;
 	bool m_bHeardAllPlayersReady;
 
+	/**
+	 * Counts the number of alive players in the specified team.
+	 * If UsingTickets(), then the number of remaining tickets is
+	 * added to the number.
+	 */
+	int CountAlivePlayersAndTickets( int iTeamNumber );
+
+	/**
+	 * Swaps the specified player's team, making sure they
+	 * get the correct kit and so on.
+	 * If skipAlive is set, then the player won't be swapped if they're alive.
+	 */
+	void SwapPlayerTeam( CHL2MP_Player *pPlayer, bool skipAlive );
+
+	/**
+	 * Swap team for all players on both teams
+	 * Note that no players are killed.
+	 */
+	void SwapTeams( void );
+
+	//BG2 - Tjoppen - stuff in CHL2MPRules
+public:
+	void RestartRound( bool swapTeams );
+	void RespawnAll();
+	void WinSong( int team, bool m_bWonMap = false );
+	void RespawnWave();
+	void ResetFlags();
+	void CountHeldFlags( int &american_flags, int &british_flags, int &neutral_flags, int &foramericans, int &forbritish );
+	void CheckFullcap();
+	void CheckTicketDrain();
+
+	int GetLimitTeamClass( int iTeam, int iClass );
+	//
+
+	//BG2 - Tjoppen - tickets
+	bool UsingTickets();	//returns whether we're currently using ticket based respawn
+
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 #ifndef CLIENT_DLL
 	bool m_bChangelevelDone;
 #endif
+// BG2 - VisualMelon - Porting - END
 };
 
 inline CHL2MPRules* HL2MPRules()

@@ -5,6 +5,7 @@
 // $NoKeywords: $
 //
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 19:20 19/01/2014
 #ifndef HL2MP_PLAYER_H
 #define HL2MP_PLAYER_H
 #pragma once
@@ -37,6 +38,9 @@ public:
 
 class CHL2MP_Player : public CHL2_Player
 {
+	//returns an abitrary free spawn point from the given list
+	CBaseEntity* HandleSpawnList( const CUtlVector<CBaseEntity *>& spawns );
+
 public:
 	DECLARE_CLASS( CHL2MP_Player, CHL2_Player );
 
@@ -69,18 +73,30 @@ public:
 	virtual bool Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex = 0);
 	virtual bool BumpWeapon( CBaseCombatWeapon *pWeapon );
 	virtual void ChangeTeam( int iTeam );
+	
+	/**
+	 * Like ChangeTeam() except with the ability to manually set whether
+	 * the player should be killed or not.
+	 */
+	void ChangeTeam( int iTeam, bool bKill );
+
 	virtual void PickupObject ( CBaseEntity *pObject, bool bLimitMassAndSize );
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
 	virtual void Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL );
 	virtual void UpdateOnRemove( void );
 	virtual void DeathSound( const CTakeDamageInfo &info );
 	virtual CBaseEntity* EntSelectSpawnPoint( void );
+	//BG2 - Tjoppen - virtuals in CHL2MP_Player
+	virtual bool			MayRespawn( void );
+	//
+
+	void  HandleSpeedChanges( void );
 		
 	int FlashlightIsOn( void );
 	void FlashlightTurnOn( void );
 	void FlashlightTurnOff( void );
 	void	PrecacheFootStepSounds( void );
-	bool	ValidatePlayerModel( const char *pModel );
+	//bool	ValidatePlayerModel( const char *pModel ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	QAngle GetAnimEyeAngles( void ) { return m_angEyeAngles.Get(); }
 
@@ -94,18 +110,23 @@ public:
 	void NoteWeaponFired( void );
 
 	void ResetAnimation( void );
-	void SetPlayerModel( void );
-	void SetPlayerTeamModel( void );
+	//void SetPlayerModel( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	//void SetPlayerTeamModel( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	Activity TranslateTeamActivity( Activity ActToTranslate );
 	
 	float GetNextModelChangeTime( void ) { return m_flNextModelChangeTime; }
 	float GetNextTeamChangeTime( void ) { return m_flNextTeamChangeTime; }
 	void  PickDefaultSpawnTeam( void );
-	void  SetupPlayerSoundsByModel( const char *pModelName );
+	//BG2 - Tjoppen - don't need this
+	//void  SetupPlayerSoundsByModel( const char *pModelName );
+	//
 	const char *GetPlayerModelSoundPrefix( void );
-	int	  GetPlayerModelType( void ) { return m_iPlayerSoundType;	}
+	//BG2 - Tjoppen - don't need this
+	//int	  GetPlayerModelType( void ) { return m_iPlayerSoundType;	}
+	//
 	
-	void  DetonateTripmines( void );
+	//BG2 - Tjoppen - don't need this
+	//void  DetonateTripmines( void );
 
 	void Reset();
 
@@ -137,6 +158,11 @@ public:
 
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
+	//BG2 - Tjoppen - GetClass()
+	int	GetClass( void ) { return m_iClass; }
+	int	GetNextClass( void ) { return m_iNextClass; }
+	void SetNextClass( int iNextClass ) { m_iNextClass = iNextClass; }
+
 		
 private:
 
@@ -150,6 +176,45 @@ private:
 
 	float m_flNextModelChangeTime;
 	float m_flNextTeamChangeTime;
+	
+	//BG2 - Tjoppen - vars in hl2mp_player
+public:
+	void		PlayermodelTeamClass( int team, int classid, int skinid );
+	void		RemoveSelfFromFlags( void );	//BG2 - Tjoppen - do this whenever we die, change team or disconnect or anything similar
+	int			GetLimitTeamClass( int iTeam, int iClass );
+	bool		AttemptJoin( int iTeam, int iClass, const char *pClassName );
+	const char* GetHitgroupPainSound( int hitgroup, int team );
+	void		HandleVoicecomm( int comm );
+
+	int GetCurrentAmmoKit( void) { return m_iCurrentAmmoKit; }
+
+	int m_iGunKit,
+		m_iAmmoKit,
+		m_iClassSkin;
+
+private:
+	CNetworkVar( int, m_iClass );
+	CNetworkVar( int, m_iCurrentAmmoKit );	//BG2 - Tjoppen - we need to copy m_iAmmoKit when spawned so players can't change current load by typing "kit ..."
+	CNetworkVar( int, m_iSpeedModifier );
+
+	//int		m_iClass;					//BG2 - Tjoppen - class system
+	int		m_iNextClass;					//BG2 - Tjoppen - which class will we become on our next respawn?
+	float	m_flNextVoicecomm,				//BG2 - Tjoppen - voice comms
+			m_flNextGlobalVoicecomm;		//BG2 - Tjoppen - only battlecries for now
+	float	m_fNextStamRegen;				//BG2 - Draco - stamina regen timer
+
+	//BG2 - Tjoppen - tickets. sometimes we don't want to remove tickets on spawn, such as when first joining a team
+	bool	m_bDontRemoveTicket;
+
+	//return the player's speed based on whether which class we are, which weapon kit we're using etc.
+	int		GetCurrentSpeed( void ) const;
+
+public:
+	//used for temporary speed modifiers (carrying flags and such)
+	void	SetSpeedModifier( int iSpeedModifier );
+
+	CBaseEntity	*m_pIntermission;	//follow that info_intermission!
+	//
 
 	float m_flSlamProtectTime;	
 
@@ -163,7 +228,26 @@ private:
 
     bool m_bEnterObserver;
 	bool m_bReady;
+
+	// BG2 - VisualMelon - When true, cancel the next "is going to fight as" message
+	bool m_bNoJoinMessage;
 };
+
+//BG2 - Tjoppen - class system
+#define	CLASS_INFANTRY			0
+#define	CLASS_OFFICER			1
+#define	CLASS_SNIPER			2
+#define	CLASS_SKIRMISHER		3
+#define	CLASS_LIGHT_INFANTRY	4
+//
+
+//BG2 - Tjoppen - ammo kit definitions
+#define AMMO_KIT_BALL		0
+#define AMMO_KIT_BUCKSHOT	1
+//BG2 - Tjoppen - Note: We can save one bit on m_iCurrentAmmoKit if we restrict ourselves to only two ammy types for now
+#define AMMO_KIT_RESERVED1	2
+#define AMMO_KIT_RESERVED2	3
+//
 
 inline CHL2MP_Player *ToHL2MPPlayer( CBaseEntity *pEntity )
 {

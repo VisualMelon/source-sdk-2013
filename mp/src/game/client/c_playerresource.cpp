@@ -17,6 +17,7 @@
 #include "tier0/memdbgon.h"
 
 const float PLAYER_RESOURCE_THINK_INTERVAL = 0.2f;
+#define PLAYER_UNCONNECTED_NAME	"unconnected"
 
 IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerResource)
 	RecvPropArray3( RECVINFO_ARRAY(m_iPing), RecvPropInt( RECVINFO(m_iPing[0]))),

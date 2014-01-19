@@ -5,6 +5,7 @@
 // $NoKeywords: $
 //
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 17:03 19/01/2014
 #ifndef HL2MP_PLAYER_H
 #define HL2MP_PLAYER_H
 #pragma once
@@ -39,7 +40,10 @@ public:
 
 	QAngle GetAnimEyeAngles( void ) { return m_angEyeAngles; }
 	Vector GetAttackSpread( CBaseCombatWeapon *pWeapon, CBaseEntity *pTarget = NULL );
-
+	
+	//BG2 - Tjoppen - EyeAngles() for C_HL2MP_Player
+	//const QAngle &EyeAngles( void );
+	//
 
 	// Should this object cast shadows?
 	virtual ShadowType_t		ShadowCastType( void );
@@ -67,8 +71,8 @@ public:
 
 	
 	bool	CanSprint( void );
-	void	StartSprinting( void );
-	void	StopSprinting( void );
+	void	StartSprinting( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base
+	void	StopSprinting( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 	void	HandleSpeedChanges( void );
 	void	UpdateLookAt( void );
 	void	Initialize( void );
@@ -76,15 +80,40 @@ public:
 	void	UpdateIDTarget( void );
 	void	PrecacheFootStepSounds( void );
 	const char	*GetPlayerModelSoundPrefix( void );
+	
+	//BG2 - Tjoppen - vars in C_HL2MP_Player
+	//CNetworkVar( int, m_iStamina );	//doesn't have to be a CNetworkVar appearently
+	int		m_iStamina;		//yeah it's a public integer, big woop, wanna fight about it?
+	float m_DeathTime; //BG2 - Used for "death cam". -HairyPotter
+
+	int		GetClass( void )			{ return m_iClass; }
+	int		GetCurrentAmmoKit( void )	{ return m_iCurrentAmmoKit; }
+
+	//return the player's speed based on whether which class we are, which weapon kit we're using etc.
+	int		GetCurrentSpeed( void ) const;
+private:
+	int		m_iClass;
+	int		m_iClassSkin;
+	int		m_iCurrentAmmoKit;
+	int		m_iSpeedModifier;
+	//
+	//BG@ - Draco - Rewards
+	//BG2 - Tjoppen - rewards put on hold
+	/*int m_iInfantryReward;
+	int m_iOfficerReward;
+	int m_iSniperReward;*/
 
 	HL2MPPlayerState State_Get() const;
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented out
+	// BG2 - VisualMelon - Porting - START
 	// Walking
-	void StartWalking( void );
-	void StopWalking( void );
-	bool IsWalking( void ) { return m_fIsWalking; }
+	//void StartWalking( void );
+	//void StopWalking( void );
+	//bool IsWalking( void ) { return m_fIsWalking; }
 
-	virtual void PostThink( void );
+	//virtual void PostThink( void );
+	// BG2 - VisualMelon - Porting - END
 
 private:
 	
@@ -126,8 +155,24 @@ private:
 
 	CNetworkVar( HL2MPPlayerState, m_iPlayerState );	
 
-	bool m_fIsWalking;
+	//bool m_fIsWalking;
 };
+
+//BG2 - Tjoppen - class system
+#define	CLASS_INFANTRY			0
+#define	CLASS_OFFICER			1
+#define	CLASS_SNIPER			2
+#define	CLASS_SKIRMISHER		3
+#define	CLASS_LIGHT_INFANTRY	4
+//
+
+//BG2 - Tjoppen - ammo kit definitions
+#define AMMO_KIT_BALL		0
+#define AMMO_KIT_BUCKSHOT	1
+//BG2 - Tjoppen - Note: We can save one bit on m_iCurrentAmmoKit if we restrict ourselves to only two ammy types for now
+#define AMMO_KIT_RESERVED1	2
+#define AMMO_KIT_RESERVED2	3
+//
 
 inline C_HL2MP_Player *ToHL2MPPlayer( CBaseEntity *pEntity )
 {
