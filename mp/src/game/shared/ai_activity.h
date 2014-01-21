@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at an unknown date and time
 #ifndef AI_ACTIVITY_H
 #define AI_ACTIVITY_H
 #ifdef _WIN32
@@ -225,11 +225,12 @@ typedef enum
 	ACT_VM_PULLBACK_LOW,
 	ACT_VM_THROW,
 	ACT_VM_PULLPIN,
+	ACT_VM_ATTACK,				//tomahawk attack
 	ACT_VM_PRIMARYATTACK,		// fire
 	ACT_VM_SECONDARYATTACK,		// alt. fire
 	ACT_VM_RELOAD,			
-	ACT_VM_RELOAD_START,			
-	ACT_VM_RELOAD_FINISH,			
+	//ACT_VM_RELOAD_START,		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	//ACT_VM_RELOAD_FINISH,		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	ACT_VM_DRYFIRE,				// fire with no ammo loaded.
 	ACT_VM_HITLEFT,				// bludgeon, swing to left - hit (primary attk)
 	ACT_VM_HITLEFT2,			// bludgeon, swing to left - hit (secondary attk)
@@ -259,29 +260,13 @@ typedef enum
 	ACT_VM_ATTACH_SILENCER,
 	ACT_VM_DETACH_SILENCER,
 
-	// TF2 Scout Pack
-	ACT_VM_DRAW_SPECIAL,
-	ACT_VM_HOLSTER_SPECIAL,
-	ACT_VM_IDLE_SPECIAL,
-	ACT_VM_PULLBACK_SPECIAL,
-	ACT_VM_PRIMARYATTACK_SPECIAL,
-	ACT_VM_SECONDARYATTACK_SPECIAL,
-	ACT_VM_HITCENTER_SPECIAL,
-	ACT_VM_SWINGHARD_SPECIAL,
-	ACT_VM_IDLE_TO_LOWERED_SPECIAL,
-	ACT_VM_IDLE_LOWERED_SPECIAL,
-	ACT_VM_LOWERED_TO_IDLE_SPECIAL,
-
-	ACT_FISTS_VM_HITLEFT,
-	ACT_FISTS_VM_HITRIGHT,
-	ACT_FISTS_VM_SWINGHARD,
-	ACT_FISTS_VM_IDLE,
-	ACT_FISTS_VM_DRAW,
+	// BG2 - VisualMelon - Porting - Deleted stuff marked TF2
 
 //===========================
 // HL2 Specific Activities
 //===========================
 	// SLAM	Specialty Activities
+	/* BG2 - VisualMelon - not needed presumably
 	ACT_SLAM_STICKWALL_IDLE,
 	ACT_SLAM_STICKWALL_ND_IDLE,
 	ACT_SLAM_STICKWALL_ATTACH,
@@ -320,6 +305,7 @@ typedef enum
 	ACT_SLAM_DETONATOR_HOLSTER,
 	ACT_SLAM_DETONATOR_STICKWALL_DRAW,
 	ACT_SLAM_DETONATOR_THROW_DRAW,
+	*/
 
 	// Shotgun Specialty Activities
 	ACT_SHOTGUN_RELOAD_START,
@@ -327,6 +313,7 @@ typedef enum
 	ACT_SHOTGUN_PUMP,
 
 	// SMG2 special activities
+	/* BG2
 	ACT_SMG2_IDLE2,
 	ACT_SMG2_FIRE2,
 	ACT_SMG2_DRAW2,
@@ -334,6 +321,7 @@ typedef enum
 	ACT_SMG2_DRYFIRE2,
 	ACT_SMG2_TOAUTO,
 	ACT_SMG2_TOBURST,
+	*/
 	
 	// Physcannon special activities
 	ACT_PHYSCANNON_UPGRADE,
@@ -389,6 +377,13 @@ typedef enum
 	ACT_IDLE_SMG1,
 	ACT_IDLE_ANGRY_SMG1,
 	ACT_IDLE_PISTOL,
+	//BG2 - Added - HairyPotter
+	ACT_BG2_IRONSIGHTS_AIM, 
+	ACT_BG2_IRONSIGHTS_WALK,
+	ACT_BG2_IRONSIGHTS_RECOIL,
+	ACT_FORCE_STABLE,
+	ACT_FORCE_STABLE_EMPTY,
+	//
 	ACT_IDLE_ANGRY_PISTOL,
 	ACT_IDLE_ANGRY_SHOTGUN,
 	ACT_IDLE_STEALTH_PISTOL,
@@ -472,6 +467,7 @@ typedef enum
 	ACT_GESTURE_RELOAD_SHOTGUN,
 
 	// Busy animations
+	/*
 	ACT_BUSY_LEAN_LEFT,
 	ACT_BUSY_LEAN_LEFT_ENTRY,
 	ACT_BUSY_LEAN_LEFT_EXIT,
@@ -486,6 +482,7 @@ typedef enum
 	ACT_BUSY_SIT_CHAIR_EXIT,
 	ACT_BUSY_STAND,
 	ACT_BUSY_QUEUE,
+	*/
 
 	// Dodge animations
 	ACT_DUCK_DODGE,
@@ -509,6 +506,7 @@ typedef enum
 	ACT_OPEN_DOOR,
 
 	// Dynamic interactions
+	/*
 	ACT_DI_ALYX_ZOMBIE_MELEE,
 	ACT_DI_ALYX_ZOMBIE_TORSO_MELEE,
 	ACT_DI_ALYX_HEADCRAB_MELEE,
@@ -516,6 +514,7 @@ typedef enum
 
 	ACT_DI_ALYX_ZOMBIE_SHOTGUN64,
 	ACT_DI_ALYX_ZOMBIE_SHOTGUN26,
+	*/
 
 	ACT_READINESS_RELAXED_TO_STIMULATED,
 	ACT_READINESS_RELAXED_TO_STIMULATED_WALK,
@@ -530,46 +529,7 @@ typedef enum
 	ACT_IDLE_CARRY,
 	ACT_WALK_CARRY,
 
-//===========================
-// TF2 Specific Activities
-//===========================
-	ACT_STARTDYING,
-	ACT_DYINGLOOP,
-	ACT_DYINGTODEAD,
-
-	ACT_RIDE_MANNED_GUN,
-
-	// All viewmodels
-	ACT_VM_SPRINT_ENTER,
-	ACT_VM_SPRINT_IDLE,
-	ACT_VM_SPRINT_LEAVE,
-
-	// Looping weapon firing
-	ACT_FIRE_START,
-	ACT_FIRE_LOOP,
-	ACT_FIRE_END,
-
-	ACT_CROUCHING_GRENADEIDLE,
-	ACT_CROUCHING_GRENADEREADY,
-	ACT_CROUCHING_PRIMARYATTACK,
-	ACT_OVERLAY_GRENADEIDLE,
-	ACT_OVERLAY_GRENADEREADY,
-	ACT_OVERLAY_PRIMARYATTACK,
-	ACT_OVERLAY_SHIELD_UP,
-	ACT_OVERLAY_SHIELD_DOWN,
-	ACT_OVERLAY_SHIELD_UP_IDLE,
-	ACT_OVERLAY_SHIELD_ATTACK,
-	ACT_OVERLAY_SHIELD_KNOCKBACK,
-	ACT_SHIELD_UP,
-	ACT_SHIELD_DOWN,
-	ACT_SHIELD_UP_IDLE,
-	ACT_SHIELD_ATTACK,
-	ACT_SHIELD_KNOCKBACK,
-	ACT_CROUCHING_SHIELD_UP,
-	ACT_CROUCHING_SHIELD_DOWN,
-	ACT_CROUCHING_SHIELD_UP_IDLE,
-	ACT_CROUCHING_SHIELD_ATTACK,
-	ACT_CROUCHING_SHIELD_KNOCKBACK,
+	// BG2 - VisualMelon - Porting - Deleted stuff marked TF2
 
 	// turning in place
 	ACT_TURNRIGHT45,
@@ -577,6 +537,7 @@ typedef enum
 
 	ACT_TURN,
 
+	/*
 	ACT_OBJ_ASSEMBLING,
 	ACT_OBJ_DISMANTLING,
 	ACT_OBJ_STARTUP,
@@ -590,11 +551,13 @@ typedef enum
 	ACT_DEPLOY,
 	ACT_DEPLOY_IDLE,
 	ACT_UNDEPLOY,
+	*/
 
 //===========================
 // HL1 Specific Activities
 //===========================
 	// Grenades
+	/*
 	ACT_GRENADE_ROLL,
 	ACT_GRENADE_TOSS,
 
@@ -629,11 +592,13 @@ typedef enum
 	// Tripmine
 	ACT_TRIPMINE_GROUND,
 	ACT_TRIPMINE_WORLD,
+	*/
 
 //===========================
 // CSPort Specific Activities
 //===========================
 
+	/*
 	ACT_VM_PRIMARYATTACK_SILENCED,		// fire
 	ACT_VM_RELOAD_SILENCED,
 	ACT_VM_DRYFIRE_SILENCED,				// fire with no ammo loaded.
@@ -650,7 +615,8 @@ typedef enum
 	
 	ACT_IDLETORUN,
 	ACT_RUNTOIDLE,
-	
+	*/
+
 
 //===========================
 // DoD Specific Activities
@@ -677,10 +643,14 @@ typedef enum
 	//Weapon is empty activities
 	ACT_VM_DRAW_EMPTY,
 	ACT_VM_PRIMARYATTACK_EMPTY,
+	//BG2 - Tjoppen - ACT_VM_SECONDARYATTACK_EMPTY
+	ACT_VM_SECONDARYATTACK_EMPTY,
+	//
 	ACT_VM_RELOAD_EMPTY,
 	ACT_VM_IDLE_EMPTY,
 	ACT_VM_IDLE_DEPLOYED_EMPTY,
 
+	/*
 	ACT_VM_IDLE_8,
 	ACT_VM_IDLE_7,
 	ACT_VM_IDLE_6,
@@ -1235,6 +1205,18 @@ typedef enum
 
 	ACT_DOD_PLANT_TNT,
 	ACT_DOD_DEFUSE_TNT,
+	*/
+
+//BG2
+	ACT_HL2MP_GESTURE_ATTACK_MELEE_BAYONET,
+	ACT_HL2MP_GESTURE_RELOAD_MUSKET,
+	ACT_BG2_GESTURE_RELOAD_CARBINE,
+	ACT_BG2_GESTURE_RELOAD_PISTOL,
+	ACT_BG2_CANNON_SHOOT,
+	ACT_BG2_CANNON_LEFT,
+	ACT_BG2_CANNON_RIGHT,
+	ACT_BG2_CANNON_IDLE,
+//
 
 // HL2MP
 	ACT_HL2MP_IDLE,
@@ -1333,7 +1315,7 @@ typedef enum
 	ACT_MP_CROUCH_IDLE,
 	ACT_MP_CROUCH_DEPLOYED_IDLE,
 	ACT_MP_CROUCH_DEPLOYED,
-	ACT_MP_CROUCHWALK_DEPLOYED,
+	//ACT_MP_CROUCHWALK_DEPLOYED, // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	ACT_MP_DEPLOYED_IDLE,
 	ACT_MP_RUN,
 	ACT_MP_WALK,
@@ -1398,8 +1380,8 @@ typedef enum
 	ACT_MP_SWIM_PRIMARY,
 	ACT_MP_DEPLOYED_PRIMARY,
 	ACT_MP_SWIM_DEPLOYED_PRIMARY,
-	ACT_MP_CROUCHWALK_DEPLOYED_PRIMARY,
-	ACT_MP_CROUCH_DEPLOYED_IDLE_PRIMARY,
+	//ACT_MP_CROUCHWALK_DEPLOYED_PRIMARY, // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	//ACT_MP_CROUCH_DEPLOYED_IDLE_PRIMARY, // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	ACT_MP_ATTACK_STAND_PRIMARY,		// RUN, WALK
 	ACT_MP_ATTACK_STAND_PRIMARY_DEPLOYED,
@@ -1421,6 +1403,9 @@ typedef enum
 	ACT_MP_RELOAD_AIRWALK_PRIMARY_LOOP,
 	ACT_MP_RELOAD_AIRWALK_PRIMARY_END,
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	ACT_MP_RELOAD_STAND_PRIMARY_2,
 	ACT_MP_RELOAD_STAND_PRIMARY_LOOP_2,
 	ACT_MP_RELOAD_STAND_PRIMARY_END_2,	
@@ -1451,6 +1436,8 @@ typedef enum
 	ACT_MP_ATTACK_STAND_PRIMARY_SUPER,
 	ACT_MP_ATTACK_CROUCH_PRIMARY_SUPER,
 	ACT_MP_ATTACK_SWIM_PRIMARY_SUPER,
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	ACT_MP_ATTACK_STAND_GRENADE_PRIMARY,		// RUN, WALK
 	ACT_MP_ATTACK_CROUCH_GRENADE_PRIMARY,		// CROUCHWALK
@@ -1488,16 +1475,24 @@ typedef enum
 	ACT_MP_RELOAD_AIRWALK_SECONDARY_LOOP,
 	ACT_MP_RELOAD_AIRWALK_SECONDARY_END,
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	ACT_MP_RELOAD_STAND_SECONDARY_2,
 	ACT_MP_RELOAD_CROUCH_SECONDARY_2,
 	ACT_MP_RELOAD_SWIM_SECONDARY_2,
 	ACT_MP_RELOAD_AIRWALK_SECONDARY_2,
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	ACT_MP_ATTACK_STAND_GRENADE_SECONDARY,		// RUN, WALK
 	ACT_MP_ATTACK_CROUCH_GRENADE_SECONDARY,		// CROUCHWALK
 	ACT_MP_ATTACK_SWIM_GRENADE_SECONDARY,
 	ACT_MP_ATTACK_AIRWALK_GRENADE_SECONDARY,
-
+	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	// Secondary2
 	ACT_MP_STAND_SECONDARY2,
 	ACT_MP_CROUCH_SECONDARY2,
@@ -1528,6 +1523,8 @@ typedef enum
 	ACT_MP_RELOAD_AIRWALK_SECONDARY2,
 	ACT_MP_RELOAD_AIRWALK_SECONDARY2_LOOP,
 	ACT_MP_RELOAD_AIRWALK_SECONDARY2_END,
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	// Melee
 	ACT_MP_STAND_MELEE,
@@ -1554,6 +1551,9 @@ typedef enum
 	ACT_MP_ATTACK_SWIM_GRENADE_MELEE,
 	ACT_MP_ATTACK_AIRWALK_GRENADE_MELEE,
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	// Item1
 	ACT_MP_STAND_ITEM1,
 	ACT_MP_CROUCH_ITEM1,
@@ -1630,6 +1630,8 @@ typedef enum
 	ACT_MP_ATTACK_CROUCH_GRENADE_ITEM2,		// CROUCHWALK
 	ACT_MP_ATTACK_SWIM_GRENADE_ITEM2,
 	ACT_MP_ATTACK_AIRWALK_GRENADE_ITEM2,
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	// Flinches
 	ACT_MP_GESTURE_FLINCH,
@@ -1646,7 +1648,10 @@ typedef enum
 	ACT_MP_GESTURE_FLINCH_RIGHTARM,
 	ACT_MP_GESTURE_FLINCH_LEFTLEG,
 	ACT_MP_GESTURE_FLINCH_RIGHTLEG,
-
+	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 // Team Fortress specific - medic heal, medic infect, etc.....
 	ACT_MP_GRENADE1_DRAW,
 	ACT_MP_GRENADE1_IDLE,
@@ -2106,6 +2111,8 @@ typedef enum
 	ACT_SPELL_VM_IDLE, 
 	ACT_SPELL_VM_ARM, 
 	ACT_SPELL_VM_FIRE,
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	// this is the end of the global activities, private per-monster activities start here.
 	LAST_SHARED_ACTIVITY,

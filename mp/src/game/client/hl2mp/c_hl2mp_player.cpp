@@ -706,25 +706,24 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 void C_HL2MP_Player::StartWalking( void )
 {
-	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
-	// BG2 - VisualMelon - Porting - START
-	//SetMaxSpeed( HL2_WALK_SPEED );
-	//m_fIsWalking = true;
-	// BG2 - VisualMelon - Porting - END
+	SetMaxSpeed( HL2_WALK_SPEED );
+	m_fIsWalking = true;
 }
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StopWalking( void )
 {
-	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
-	// BG2 - VisualMelon - Porting - START
-	//SetMaxSpeed( HL2_NORM_SPEED );
-	//m_fIsWalking = false;
-	// BG2 - VisualMelon - Porting - END
+	SetMaxSpeed( HL2_NORM_SPEED );
+	m_fIsWalking = false;
 }
+*/
+// BG2 - VisualMelon - Porting - END
 
 void C_HL2MP_Player::ItemPreFrame( void )
 {

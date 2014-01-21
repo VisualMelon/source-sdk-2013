@@ -3,7 +3,7 @@
 // Purpose: Base combat character with no AI
 //
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 21:57 21/01/2014
 #include "cbase.h"
 #include "basecombatcharacter.h"
 #include "basecombatweapon.h"
@@ -39,12 +39,17 @@
 #include "saverestoretypes.h"
 #include "nav_mesh.h"
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 #ifdef NEXT_BOT
 #include "NextBot/NextBotManager.h"
 #endif
+*/
+// BG2 - VisualMelon - Porting - END
 
 #ifdef HL2_DLL
-#include "weapon_physcannon.h"
+//#include "weapon_physcannon.h"
 #include "hl2_gamerules.h"
 #endif
 
@@ -58,7 +63,9 @@
 #include "tier0/memdbgon.h"
 
 #ifdef HL2_DLL
-extern int	g_interactionBarnacleVictimReleased;
+//BG2 - Tjoppen - removing more npcs and weapons
+//extern int	g_interactionBarnacleVictimReleased;
+//
 #endif //HL2_DLL
 
 extern ConVar weapon_showproficiency;
@@ -66,7 +73,7 @@ extern ConVar weapon_showproficiency;
 ConVar ai_show_hull_attacks( "ai_show_hull_attacks", "0" );
 ConVar ai_force_serverside_ragdoll( "ai_force_serverside_ragdoll", "0" );
 
-ConVar nb_last_area_update_tolerance( "nb_last_area_update_tolerance", "4.0", FCVAR_CHEAT, "Distance a character needs to travel in order to invalidate cached area" ); // 4.0 tested as sweet spot (for wanderers, at least). More resulted in little benefit, less quickly diminished benefit [7/31/2008 tom]
+//ConVar nb_last_area_update_tolerance( "nb_last_area_update_tolerance", "4.0", FCVAR_CHEAT, "Distance a character needs to travel in order to invalidate cached area" ); // 4.0 tested as sweet spot (for wanderers, at least). More resulted in little benefit, less quickly diminished benefit [7/31/2008 tom] // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 #ifndef _RETAIL
 ConVar ai_use_visibility_cache( "ai_use_visibility_cache", "1" );
@@ -87,14 +94,14 @@ BEGIN_DATADESC( CBaseCombatCharacter )
 	DEFINE_FIELD( m_flNextAttack, FIELD_TIME ),
 	DEFINE_FIELD( m_eHull, FIELD_INTEGER ),
 	DEFINE_FIELD( m_bloodColor, FIELD_INTEGER ),
-	DEFINE_FIELD( m_iDamageCount, FIELD_INTEGER ),
+	//DEFINE_FIELD( m_iDamageCount, FIELD_INTEGER ), // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	
 	DEFINE_FIELD( m_flFieldOfView, FIELD_FLOAT ),
 	DEFINE_FIELD( m_HackedGunPos, FIELD_VECTOR ),
 	DEFINE_KEYFIELD( m_RelationshipString, FIELD_STRING, "Relationship" ),
 
 	DEFINE_FIELD( m_LastHitGroup, FIELD_INTEGER ),
-	DEFINE_FIELD( m_flDamageAccumulator, FIELD_FLOAT ),
+	//DEFINE_FIELD( m_flDamageAccumulator, FIELD_FLOAT ), // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	DEFINE_INPUT( m_impactEnergyScale, FIELD_FLOAT, "physdamagescale" ),
 	DEFINE_FIELD( m_CurrentWeaponProficiency, FIELD_INTEGER),
 
@@ -190,9 +197,7 @@ END_SEND_TABLE();
 // This table encodes the CBaseCombatCharacter
 //-----------------------------------------------------------------------------
 IMPLEMENT_SERVERCLASS_ST(CBaseCombatCharacter, DT_BaseCombatCharacter)
-#ifdef GLOWS_ENABLE
-	SendPropBool( SENDINFO( m_bGlowEnabled ) ),
-#endif // GLOWS_ENABLE
+// BG2 - VisualMelon - Porting - removed GLOWS stuff
 	// Data that only gets sent to the local player.
 	SendPropDataTable( "bcc_localdata", 0, &REFERENCE_SEND_TABLE(DT_BCCLocalPlayerExclusive), SendProxy_SendBaseCombatCharacterLocalDataTable ),
 
@@ -692,12 +697,13 @@ bool CBaseCombatCharacter::FInAimCone( const Vector &vecSpot )
 bool CBaseCombatCharacter::HandleInteraction( int interactionType, void *data, CBaseCombatCharacter* sourceEnt )
 {
 #ifdef HL2_DLL
-	if ( interactionType == g_interactionBarnacleVictimReleased )
+	//BG2 - Tjoppen - removing more npcs and weapons
+	/*if ( interactionType == g_interactionBarnacleVictimReleased )
 	{
 		// For now, throw away the NPC and leave the ragdoll.
 		UTIL_Remove( this );
 		return true;
-	}
+	}*/
 #endif // HL2_DLL
 	return false;
 }
@@ -713,7 +719,7 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 #endif
 
 	// Zero the damage accumulator.
-	m_flDamageAccumulator = 0.0f;
+	//m_flDamageAccumulator = 0.0f; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	// Init weapon and Ammo data
 	m_hActiveWeapon			= NULL;
@@ -721,6 +727,9 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 	// reset all ammo values to 0
 	RemoveAllAmmo();
 	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	// not alive yet
 	m_aliveTimer.Invalidate();
 	m_hasBeenInjured = 0;
@@ -733,6 +742,8 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 	// not standing on a nav area yet
 	m_lastNavArea = NULL;
 	m_registeredNavTeam = TEAM_INVALID;
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
@@ -744,9 +755,7 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 
 	m_bForceServerRagdoll = ai_force_serverside_ragdoll.GetBool();
 
-#ifdef GLOWS_ENABLE
-	m_bGlowEnabled.Set( false );
-#endif // GLOWS_ENABLE
+// BG2 - VisualMelon - Porting - Removed more GLOWS stuff
 }
 
 //------------------------------------------------------------------------------
@@ -757,7 +766,7 @@ CBaseCombatCharacter::CBaseCombatCharacter( void )
 CBaseCombatCharacter::~CBaseCombatCharacter( void )
 {
 	ResetVisibilityCache( this );
-	ClearLastKnownArea();
+	//ClearLastKnownArea(); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 }
 
 //-----------------------------------------------------------------------------
@@ -765,6 +774,9 @@ CBaseCombatCharacter::~CBaseCombatCharacter( void )
 //-----------------------------------------------------------------------------
 void CBaseCombatCharacter::Spawn( void )
 {
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	BaseClass::Spawn();
 	
 	SetBlocksLOS( false );
@@ -778,7 +790,8 @@ void CBaseCombatCharacter::Spawn( void )
 
 	// not standing on a nav area yet
 	ClearLastKnownArea();
-
+	*/
+	// BG2 - VisualMelon - Porting - END
 }
 
 //-----------------------------------------------------------------------------
@@ -850,10 +863,8 @@ void CBaseCombatCharacter::UpdateOnRemove( void )
 		pOwner->DeathNotice( this );
 		SetOwnerEntity( NULL );
 	}
-
-#ifdef GLOWS_ENABLE
-	RemoveGlowEffect();
-#endif // GLOWS_ENABLE
+	
+// BG2 - VisualMelon - Porting - Removed more GLOWS
 
 	// Chain at end to mimic destructor unwind order
 	BaseClass::UpdateOnRemove();
@@ -1542,10 +1553,15 @@ bool CBaseCombatCharacter::BecomeRagdoll( const CTakeDamageInfo &info, const Vec
 
 #ifdef HL2_DLL	
 
-	bool bMegaPhyscannonActive = false;
+	bool bMegaPhyscannonActive = false; // BG2 - VisualMelon - Porting - Not in 2007 code base - doesn't seem to do much harm
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 #if !defined( HL2MP )
 	bMegaPhyscannonActive = HL2GameRules()->MegaPhyscannonActive();
 #endif // !HL2MP
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	// Mega physgun requires everything to be a server-side ragdoll
 	if ( m_bForceServerRagdoll == true || ( ( bMegaPhyscannonActive == true ) && !IsPlayer() && Classify() != CLASS_PLAYER_ALLY_VITAL && Classify() != CLASS_PLAYER_ALLY ) )
@@ -1645,6 +1661,9 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 				pDroppedWeapon->Dissolve( NULL, gpGlobals->curtime, false, nDissolveType );
 			}
 		}
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+		// BG2 - VisualMelon - Porting - START
+		/*
 #ifdef HL2_DLL
 		else if ( PlayerHasMegaPhysCannon() )
 		{
@@ -1654,6 +1673,8 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 			}
 		}
 #endif
+		*/
+		// BG2 - VisualMelon - Porting - END
 
 		if ( !bRagdollCreated && ( info.GetDamageType() & DMG_REMOVENORAGDOLL ) == 0 )
 		{
@@ -1661,6 +1682,9 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 		}
 	}
 	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	// no longer standing on a nav area
 	ClearLastKnownArea();
 
@@ -1676,20 +1700,21 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 	// inform bots
 	TheNextBots().OnKilled( this, info );
 #endif
+	*/
+	// BG2 - VisualMelon - Porting - NED
 
-#ifdef GLOWS_ENABLE
-	RemoveGlowEffect();
-#endif // GLOWS_ENABLE
+// BG2 - VisualMelon - Porting - removed more GLOWS
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - left in for good measure
 void CBaseCombatCharacter::Event_Dying( const CTakeDamageInfo &info )
 {
 }
 
 void CBaseCombatCharacter::Event_Dying()
 {
-	CTakeDamageInfo info;
-	Event_Dying( info );
+	CTakeDamageInfo info; // BG2 - VisualMelon - Porting - Not in 2007 code base
+	Event_Dying( info ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 }
 
 
@@ -1702,11 +1727,16 @@ bool CBaseCombatCharacter::Weapon_Detach( CBaseCombatWeapon *pWeapon )
 	{
 		if ( pWeapon == m_hMyWeapons[i] )
 		{
+			// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+			// BG2 - VisualMelon - Porting - START
+			/*
 			pWeapon->Detach();
 			if ( pWeapon->HolsterOnDetach() )
 			{
 				pWeapon->Holster();
 			}
+			*/
+			// BG2 - VisualMelon - Porting - END
 			m_hMyWeapons.Set( i, NULL );
 			pWeapon->SetOwner( NULL );
 
@@ -1905,7 +1935,10 @@ void CBaseCombatCharacter::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector
 	if ( !pWeapon )
 		return;
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented, I figure this was removed, as the logic is a bit familiar to me
+	// BG2 - VisualMelon - Porting - START
 	// If I'm an NPC, fill the weapon with ammo before I drop it.
+	/*
 	if ( GetFlags() & FL_NPC )
 	{
 		if ( pWeapon->UsesClipsForAmmo1() )
@@ -1930,6 +1963,8 @@ void CBaseCombatCharacter::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector
 			pWeapon->AddEffects( EF_ITEM_BLINK );
 		}
 	}
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	if ( IsPlayer() )
 	{
@@ -2088,17 +2123,7 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 	// ----------------------
 	// If gun doesn't use clips, just give ammo
 	if (pWeapon->GetMaxClip1() == -1)
-	{
-#ifdef HL2_DLL
-		if( FStrEq(STRING(gpGlobals->mapname), "d3_c17_09") && FClassnameIs(pWeapon, "weapon_rpg") && pWeapon->NameMatches("player_spawn_items") )
-		{
-			// !!!HACK - Don't give any ammo with the spawn equipment RPG in d3_c17_09. This is a chapter
-			// start and the map is way to easy if you start with 3 RPG rounds. It's fine if a player conserves
-			// them and uses them here, but it's not OK to start with enough ammo to bypass the snipers completely.
-			GiveAmmo( 0, pWeapon->m_iPrimaryAmmoType); 
-		}
-		else
-#endif // HL2_DLL
+	{ // BG2 - VisualMelon - Porting - Lots of stuff removed here, was to do with dishing out starting Ammo, something BG2 does itself
 		GiveAmmo(pWeapon->GetDefaultClip1(), pWeapon->m_iPrimaryAmmoType); 
 	}
 	// If default ammo given is greater than clip
@@ -2380,7 +2405,7 @@ int CBaseCombatCharacter::OnTakeDamage( const CTakeDamageInfo &info )
 	if (!m_takedamage)
 		return 0;
 
-	m_iDamageCount++;
+	//m_iDamageCount++; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	if ( info.GetDamageType() & DMG_SHOCK )
 	{
@@ -2388,6 +2413,9 @@ int CBaseCombatCharacter::OnTakeDamage( const CTakeDamageInfo &info )
 		UTIL_Smoke( info.GetDamagePosition(), random->RandomInt( 10, 15 ), 10 );
 	}
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	// track damage history
 	if ( info.GetAttacker() )
 	{
@@ -2413,6 +2441,8 @@ int CBaseCombatCharacter::OnTakeDamage( const CTakeDamageInfo &info )
 			}
 		}
 	}
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	switch( m_lifeState )
 	{
@@ -2475,6 +2505,9 @@ int CBaseCombatCharacter::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	// do the damage
 	if ( m_takedamage != DAMAGE_EVENTS_ONLY )
 	{
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented, looks like it was removed in 2007 copy
+		// BG2 - VisualMelon - Porting - START
+		/*
 		// Separate the fractional amount of damage from the whole
 		float flFractionalDamage = info.GetDamage() - floor( info.GetDamage() );
 		float flIntegerDamage = info.GetDamage() - flFractionalDamage;
@@ -2489,11 +2522,13 @@ int CBaseCombatCharacter::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 			flIntegerDamage += 1.0;
 			m_flDamageAccumulator -= 1.0;
 		}
+		*/
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
-		if ( flIntegerDamage <= 0 )
+		if ( info.GetDamage() <= 0 ) // BG2 - VisualMelon - Porting - Not in 2007 code base - was flIntegerDamage
 			return 0;
 
-		m_iHealth -= flIntegerDamage;
+		m_iHealth -= info.GetDamage();
 	}
 
 	return 1;
@@ -3125,7 +3160,7 @@ void CBaseCombatCharacter::VPhysicsShadowCollision( int index, gamevcollisioneve
 	// inertia tensor to get torque?
 	Vector damageForce = pEvent->postVelocity[index] * pEvent->pObjects[index]->GetMass() * phys_impactforcescale.GetFloat();
 	
-	IServerVehicle *vehicleOther = pOther->GetServerVehicle();
+	/*IServerVehicle *vehicleOther = pOther->GetServerVehicle();
 	if ( vehicleOther )
 	{
 		CBaseCombatCharacter *pPassenger = vehicleOther->GetPassenger();
@@ -3151,7 +3186,7 @@ void CBaseCombatCharacter::VPhysicsShadowCollision( int index, gamevcollisioneve
 				}
 			}
 		}
-	}
+	}*/
 
 	Vector damagePos;
 	pEvent->pInternalData->GetContactPoint( damagePos );
@@ -3230,6 +3265,9 @@ float CBaseCombatCharacter::GetSpreadBias( CBaseCombatWeapon *pWeapon, CBaseEnti
 	return 1.0;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 #ifdef GLOWS_ENABLE
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -3256,6 +3294,8 @@ bool CBaseCombatCharacter::IsGlowEffectActive( void )
 	return m_bGlowEnabled;
 }
 #endif // GLOWS_ENABLE
+*/
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Assume everyone is average with every weapon. Override this to make exceptions.
@@ -3342,6 +3382,9 @@ void CBaseCombatCharacter::DoMuzzleFlash()
 	}
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 //-----------------------------------------------------------------------------
 // Purpose: return true if given target cant be seen because of fog
 //-----------------------------------------------------------------------------
@@ -3400,6 +3443,7 @@ float CBaseCombatCharacter::GetFogObscuredRatio( CBaseEntity *target ) const
 //-----------------------------------------------------------------------------
 float CBaseCombatCharacter::GetFogObscuredRatio( float range ) const
 {
+*/
 /* TODO: Get global fog from map somehow since nav mesh fog is gone
 	fogparams_t fog;
 	GetFogParams( &fog );
@@ -3417,7 +3461,7 @@ float CBaseCombatCharacter::GetFogObscuredRatio( float range ) const
 	ratio = MIN( ratio, fog.maxdensity );
 	return ratio;
 */
-	return 0.0f;
+/*	return 0.0f;
 }
 
 
@@ -3533,7 +3577,7 @@ void CBaseCombatCharacter::ChangeTeam( int iTeamNum )
 //-----------------------------------------------------------------------------
 // Return true if we have ever been injured by a member of the given team
 //-----------------------------------------------------------------------------
-bool CBaseCombatCharacter::HasEverBeenInjured( int team /*= TEAM_ANY */ ) const
+bool CBaseCombatCharacter::HasEverBeenInjured( int team /*= TEAM_ANY *//* ) const
 {
 	if ( team == TEAM_ANY )
 	{
@@ -3554,7 +3598,7 @@ bool CBaseCombatCharacter::HasEverBeenInjured( int team /*= TEAM_ANY */ ) const
 //-----------------------------------------------------------------------------
 // Return time since we were hurt by a member of the given team
 //-----------------------------------------------------------------------------
-float CBaseCombatCharacter::GetTimeSinceLastInjury( int team /*= TEAM_ANY */ ) const
+float CBaseCombatCharacter::GetTimeSinceLastInjury( int team /*= TEAM_ANY *//* ) const
 {
 	const float never = 999999999999.9f;
 
@@ -3589,4 +3633,4 @@ float CBaseCombatCharacter::GetTimeSinceLastInjury( int team /*= TEAM_ANY */ ) c
 
 	return never;
 }
-
+*/

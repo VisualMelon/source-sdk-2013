@@ -3,7 +3,7 @@
 // Purpose:
 //
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 16:37 20/01/2014
 #include "cbase.h"
 #include "hl2mp_hud_chat.h"
 #include "hud_macros.h"
@@ -106,8 +106,9 @@ Color CHudChat::GetClientColor( int clientIndex )
 	{
 		switch ( g_PR->GetTeam( clientIndex ) )
 		{
-		case TEAM_COMBINE	: return g_ColorBlue;
-		case TEAM_REBELS	: return g_ColorRed;
+		// BG2 - VisualMelon - Porting - Not in 2007 code base, used AMER/BRIT instead of REBEL/COMBINE
+		case TEAM_AMERICANS	: return g_ColorBlue;
+		case TEAM_BRITISH	: return g_ColorRed;
 		default	: return g_ColorYellow;
 		}
 	}

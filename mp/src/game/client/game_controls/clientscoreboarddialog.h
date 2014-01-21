@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 22:35 21/01/2014
 #ifndef CLIENTSCOREBOARDDIALOG_H
 #define CLIENTSCOREBOARDDIALOG_H
 #ifdef _WIN32
@@ -49,7 +49,7 @@ public:
 
 	virtual bool ShowAvatars() 
 	{ 
-#ifdef CSS_PERF_TEST
+#ifdef CSS_PERF_TEST // BG2 - VisualMelon - Porting - Not in 2007 code base - looks harmless enough
 		return false;
 #endif
 		return IsPC(); 
@@ -90,7 +90,9 @@ protected:
 
 	int m_iNumTeams;
 
-	vgui::SectionedListPanel *m_pPlayerList;
+	vgui::SectionedListPanel *m_pPlayerList; // Nifty: Is this the AmericanPlayerList?
+	vgui::SectionedListPanel *m_pBritishPlayerList; //BG2 - HairyPotter
+
 	int				m_iSectionId; // the current section we are entering into
 
 	int s_VoiceImage[5];

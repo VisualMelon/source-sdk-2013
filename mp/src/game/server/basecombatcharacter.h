@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 16:37 20/01/2014
 #ifndef BASECOMBATCHARACTER_H
 #define BASECOMBATCHARACTER_H
 
@@ -30,7 +30,7 @@
 #include "ai_utils.h"
 #include "physics_impact_damage.h"
 
-class CNavArea;
+//class CNavArea; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 class CScriptedTarget;
 typedef CHandle<CBaseCombatWeapon> CBaseCombatWeaponHandle;
 
@@ -81,7 +81,7 @@ enum Capability_t
 
 class CBaseCombatWeapon;
 
-#define BCC_DEFAULT_LOOK_TOWARDS_TOLERANCE 0.9f
+//#define BCC_DEFAULT_LOOK_TOWARDS_TOLERANCE 0.9f // BG2 - VisualMelon - Porting - Not in 2007 code base - commented (figure it was probably removed prior)
 
 enum Disposition_t 
 {
@@ -122,7 +122,13 @@ public:
 
 public:
 
-	virtual void		Spawn( void );
+	void				Spawn( void ) // BG2 - VisualMelon - Porting - was virtual in 2013 (not in 2007)
+	{
+		BaseClass::Spawn();
+		SetBlocksLOS( false );
+	}
+
+
 	virtual void		Precache();
 
 	virtual int			Restore( IRestore &restore );
@@ -168,6 +174,9 @@ public:
 
 	virtual void SetTransmit( CCheckTransmitInfo *pInfo, bool bAlways );
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	// -----------------------
 	// Fog
 	// -----------------------
@@ -201,6 +210,8 @@ public:
 	};
 	virtual bool IsLineOfSightClear( CBaseEntity *entity, LineOfSightCheckType checkType = IGNORE_NOTHING ) const;// strictly LOS check with no other considerations
 	virtual bool IsLineOfSightClear( const Vector &pos, LineOfSightCheckType checkType = IGNORE_NOTHING, CBaseEntity *entityToIgnore = NULL ) const;
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	// -----------------------
 	// Ammo
@@ -258,12 +269,12 @@ public:
 	virtual int				OnTakeDamage_Dying( const CTakeDamageInfo &info );
 	virtual int				OnTakeDamage_Dead( const CTakeDamageInfo &info );
 
-	virtual float			GetAliveDuration( void ) const;			// return time we have been alive (only valid when alive)
+	//virtual float			GetAliveDuration( void ) const;			// return time we have been alive (only valid when alive) // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	virtual void 			OnFriendDamaged( CBaseCombatCharacter *pSquadmate, CBaseEntity *pAttacker ) {}
 	virtual void 			NotifyFriendsOfDamage( CBaseEntity *pAttackerEntity ) {}
-	virtual bool			HasEverBeenInjured( int team = TEAM_ANY ) const;			// return true if we have ever been injured by a member of the given team
-	virtual float			GetTimeSinceLastInjury( int team = TEAM_ANY ) const;		// return time since we were hurt by a member of the given team
+	//virtual bool			HasEverBeenInjured( int team = TEAM_ANY ) const;			// return true if we have ever been injured by a member of the given team // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	//virtual float			GetTimeSinceLastInjury( int team = TEAM_ANY ) const;		// return time since we were hurt by a member of the given team // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 
 	virtual void			OnPlayerKilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &info ) {}
@@ -280,8 +291,8 @@ public:
 	virtual bool			HasAlienGibs( void );
 	virtual bool			ShouldGib( const CTakeDamageInfo &info ) { return false; }	// Always ragdoll, unless specified by the leaf class
 
-	float GetDamageAccumulator() { return m_flDamageAccumulator; }
-	int	  GetDamageCount( void ) { return m_iDamageCount; }	// # of times NPC has been damaged.  used for tracking 1-shot kills.
+	//float GetDamageAccumulator() { return m_flDamageAccumulator; } // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	//int	  GetDamageCount( void ) { return m_iDamageCount; }	// # of times NPC has been damaged.  used for tracking 1-shot kills. // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	// Character killed (only fired once)
 	virtual void			Event_Killed( const CTakeDamageInfo &info );
@@ -295,7 +306,7 @@ public:
 	// returns true if gibs were spawned
 	virtual bool			Event_Gibbed( const CTakeDamageInfo &info );
 	// Character entered the dying state without being gibbed (only fired once)
-	virtual void			Event_Dying( const CTakeDamageInfo &info );
+	virtual void			Event_Dying( const CTakeDamageInfo &info ); // BG2 - VisualMelon - Porting - Not in 2007 code base - left in for good measure
 	virtual void			Event_Dying();
 	// character died and should become a ragdoll now
 	// return true if converted to a ragdoll, false to use AI death
@@ -367,7 +378,7 @@ public:
 	virtual bool		RemoveEntityRelationship( CBaseEntity *pEntity );
 	virtual void		AddClassRelationship( Class_T nClass, Disposition_t nDisposition, int nPriority );
 
-	virtual void		ChangeTeam( int iTeamNum );
+	//virtual void		ChangeTeam( int iTeamNum ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented (BG2 allready implements this functionality elsewhere me thinks)
 
 	// Nav hull type
 	Hull_t	GetHullType() const				{ return m_eHull; }
@@ -400,6 +411,9 @@ public:
 	void				SetPreventWeaponPickup( bool bPrevent ) { m_bPreventWeaponPickup = bPrevent; }
 	bool				m_bPreventWeaponPickup;
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	virtual CNavArea *GetLastKnownArea( void ) const		{ return m_lastNavArea; }		// return the last nav area the player occupied - NULL if unknown
 	virtual bool IsAreaTraversable( const CNavArea *area ) const;							// return true if we can use the given area 
 	virtual void ClearLastKnownArea( void );
@@ -418,10 +432,11 @@ public:
 	void				RemoveGlowEffect( void );
 	bool				IsGlowEffectActive( void );
 #endif // GLOWS_ENABLE
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 #ifdef INVASION_DLL
 public:
-
 
 	// TF2 Powerups
 	virtual bool		CanBePoweredUp( void );
@@ -456,16 +471,24 @@ protected:
 public:
 	CNetworkVar( float, m_flNextAttack );			// cannot attack again until this time
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 #ifdef GLOWS_ENABLE
 protected:
 	CNetworkVar( bool, m_bGlowEnabled );
 #endif // GLOWS_ENABLE
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 private:
 	Hull_t		m_eHull;
 
-	void				UpdateGlowEffect( void );
-	void				DestroyGlowEffect( void );
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	//void				UpdateGlowEffect( void );
+	//void				DestroyGlowEffect( void );
+	// BG2 - VisualMelon - Porting - END
 
 protected:
 	int			m_bloodColor;			// color of blood particless
@@ -483,7 +506,7 @@ public:
 
 protected:
 	// Visibility-related stuff
-	bool ComputeLOS( const Vector &vecEyePosition, const Vector &vecTarget ) const;
+	//bool ComputeLOS( const Vector &vecEyePosition, const Vector &vecTarget ) const; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 private:
 	// For weapon strip
 	void ThrowDirForWeaponStrip( CBaseCombatWeapon *pWeapon, const Vector &vecForward, Vector *pVecThrowDir );
@@ -496,8 +519,8 @@ private:
 
 	// attack/damage
 	int					m_LastHitGroup;			// the last body region that took damage
-	float				m_flDamageAccumulator;	// so very small amounts of damage do not get lost.
-	int					m_iDamageCount;			// # of times NPC has been damaged.  used for tracking 1-shot kills.
+	//float				m_flDamageAccumulator;	// so very small amounts of damage do not get lost. // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	//int					m_iDamageCount;			// # of times NPC has been damaged.  used for tracking 1-shot kills. // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	
 	// Weapon proficiency gets calculated each time an NPC changes his weapon, and then
 	// cached off as the CurrentWeaponProficiency.
@@ -519,6 +542,9 @@ protected:
 
 	friend class CCleanupDefaultRelationShips;
 	
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	IntervalTimer m_aliveTimer;
 
 	unsigned int m_hasBeenInjured;							// bitfield corresponding to team ID that did the injury	
@@ -536,13 +562,18 @@ protected:
 	CNavArea *m_lastNavArea;
 	CAI_MoveMonitor m_NavAreaUpdateMonitor;
 	int m_registeredNavTeam;	// ugly, but needed to clean up player team counts in nav mesh
+	*/
+	// BG2 - VisualMelon - Porting - END
 };
 
 
-inline float CBaseCombatCharacter::GetAliveDuration( void ) const
-{
-	return m_aliveTimer.GetElapsedTime();
-}
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//inline float CBaseCombatCharacter::GetAliveDuration( void ) const
+//{
+//	return m_aliveTimer.GetElapsedTime();
+//}
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: 
