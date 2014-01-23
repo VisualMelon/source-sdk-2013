@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 15:29 23/01/2014
 #ifndef BASEVIEWMODEL_SHARED_H
 #define BASEVIEWMODEL_SHARED_H
 #ifdef _WIN32
@@ -15,7 +15,7 @@
 #include "utlvector.h"
 #include "baseplayer_shared.h"
 #include "shared_classnames.h"
-#include "econ/ihasowner.h"
+//#include "econ/ihasowner.h" // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 class CBaseCombatWeapon;
 class CBaseCombatCharacter;
@@ -28,7 +28,7 @@ class CVGuiScreen;
 
 #define VIEWMODEL_INDEX_BITS 1
 
-class CBaseViewModel : public CBaseAnimating, public IHasOwner
+class CBaseViewModel : public CBaseAnimating//, public IHasOwner // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 {
 	DECLARE_CLASS( CBaseViewModel, CBaseAnimating );
 public:
@@ -57,6 +57,11 @@ public:
 								const QAngle& eyeAngles );
 	virtual void			AddViewModelBob( CBasePlayer *owner, Vector& eyePosition, QAngle& eyeAngles ) {};
 
+	//BG2 -Added for Iron Sights Testing. Credits to Jorg for the code. -HairyPotter
+	void		CalcIronsights( Vector &pos, QAngle &ang );
+	//
+
+
 	// Initializes the viewmodel for use							
 	void					SetOwner( CBaseEntity *pEntity );
 	void					SetIndex( int nIndex );
@@ -79,7 +84,7 @@ public:
 
 	virtual CBaseCombatWeapon *GetOwningWeapon( void );
 	
-	virtual CBaseEntity	*GetOwnerViaInterface( void ) { return GetOwner(); }
+	//virtual CBaseEntity	*GetOwnerViaInterface( void ) { return GetOwner(); } // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	virtual bool			IsSelfAnimating()
 	{
@@ -133,11 +138,11 @@ public:
 
 	virtual bool			ShouldDraw();
 	virtual int				DrawModel( int flags );
-	virtual int				InternalDrawModel( int flags );
+	//virtual int				InternalDrawModel( int flags ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	int						DrawOverriddenViewmodel( int flags );
 	virtual int				GetFxBlend( void );
 	virtual bool			IsTransparent( void );
-	virtual bool			UsesPowerOfTwoFrameBufferTexture( void );
+	//virtual bool			UsesPowerOfTwoFrameBufferTexture( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	
 	// Should this object cast shadows?
 	virtual ShadowType_t	ShadowCastType() { return SHADOWS_NONE; }
@@ -165,12 +170,17 @@ public:
 #ifdef CLIENT_DLL
 	virtual bool			ShouldResetSequenceOnNewModel( void ) { return false; }
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	// Attachments
 	virtual int				LookupAttachment( const char *pAttachmentName );
 	virtual bool			GetAttachment( int number, matrix3x4_t &matrix );
 	virtual bool			GetAttachment( int number, Vector &origin );
 	virtual	bool			GetAttachment( int number, Vector &origin, QAngle &angles );
 	virtual bool			GetAttachmentVelocity( int number, Vector &originVel, Quaternion &angleVel );
+	*/
+	// BG2 - VisualMelon - Porting - END
 #endif
 
 private:

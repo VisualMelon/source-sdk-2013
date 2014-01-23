@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 22:32 22/01/2014
 #include "cbase.h"
 #include "ammodef.h"
 
@@ -43,7 +43,7 @@ bool CBaseCombatCharacter::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmo
 	// Already have it out?
 	if ( m_hActiveWeapon.Get() == pWeapon )
 	{
-		if ( !m_hActiveWeapon->IsWeaponVisible() || m_hActiveWeapon->IsHolstered() )
+		if ( !m_hActiveWeapon->IsWeaponVisible() /*|| m_hActiveWeapon->IsHolstered()*/ ) // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 			return m_hActiveWeapon->Deploy( );
 		return false;
 	}
@@ -59,8 +59,9 @@ bool CBaseCombatCharacter::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmo
 			return false;
 	}
 
+	//BG2 - Tjoppen - TODO: if in the future we want holster/draw animations to play correctly, delay the following two
+	//						lines until the holster animation has finished. that should work.
 	m_hActiveWeapon = pWeapon;
-
 	return pWeapon->Deploy( );
 }
 
@@ -70,7 +71,7 @@ bool CBaseCombatCharacter::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmo
 //-----------------------------------------------------------------------------
 bool CBaseCombatCharacter::Weapon_CanSwitchTo( CBaseCombatWeapon *pWeapon )
 {
-	if (IsPlayer())
+	/*if (IsPlayer())
 	{
 		CBasePlayer *pPlayer = (CBasePlayer *)this;
 #if !defined( CLIENT_DLL )
@@ -80,7 +81,7 @@ bool CBaseCombatCharacter::Weapon_CanSwitchTo( CBaseCombatWeapon *pWeapon )
 #endif
 		if (pVehicle && !pPlayer->UsingStandardWeaponsInVehicle())
 			return false;
-	}
+	}*/
 
 	if ( !pWeapon->HasAnyAmmo() && !GetAmmoCount( pWeapon->m_iPrimaryAmmoType ) )
 		return false;
@@ -215,6 +216,9 @@ void CBaseCombatCharacter::SetBloodColor( int nBloodColor )
 	This is LOS, plus invisibility and fog and smoke and such.
 */
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 enum VisCacheResult_t
 {
 	VISCACHE_UNKNOWN = 0,
@@ -562,6 +566,17 @@ bool CBaseCombatCharacter::ComputeTargetIsInDarkness( const Vector &vecEyePositi
 	return false;
 }
 #endif
+*/
+
+//-----------------------------------------------------------------------------
+/**
+	Return true if our view direction is pointing at the given target, 
+	within the cosine of the angular tolerance. LINE OF SIGHT IS NOT CHECKED.
+*/
+//bool CBaseCombatCharacter::IsLookingTowards( const CBaseEntity *target, float cosTolerance ) const
+//{
+//	return IsLookingTowards( target->WorldSpaceCenter(), cosTolerance ) || IsLookingTowards( target->EyePosition(), cosTolerance ) || IsLookingTowards( target->GetAbsOrigin(), cosTolerance );
+//}
 
 
 //-----------------------------------------------------------------------------
@@ -569,27 +584,16 @@ bool CBaseCombatCharacter::ComputeTargetIsInDarkness( const Vector &vecEyePositi
 	Return true if our view direction is pointing at the given target, 
 	within the cosine of the angular tolerance. LINE OF SIGHT IS NOT CHECKED.
 */
-bool CBaseCombatCharacter::IsLookingTowards( const CBaseEntity *target, float cosTolerance ) const
-{
-	return IsLookingTowards( target->WorldSpaceCenter(), cosTolerance ) || IsLookingTowards( target->EyePosition(), cosTolerance ) || IsLookingTowards( target->GetAbsOrigin(), cosTolerance );
-}
-
-
-//-----------------------------------------------------------------------------
-/**
-	Return true if our view direction is pointing at the given target, 
-	within the cosine of the angular tolerance. LINE OF SIGHT IS NOT CHECKED.
-*/
-bool CBaseCombatCharacter::IsLookingTowards( const Vector &target, float cosTolerance ) const
-{
-	Vector toTarget = target - EyePosition();
-	toTarget.NormalizeInPlace();
-
-	Vector forward;
-	AngleVectors( EyeAngles(), &forward );
-
-	return ( DotProduct( forward, toTarget ) >= cosTolerance );
-}
+//bool CBaseCombatCharacter::IsLookingTowards( const Vector &target, float cosTolerance ) const
+//{
+//	Vector toTarget = target - EyePosition();
+//	toTarget.NormalizeInPlace();
+//
+//	Vector forward;
+//	AngleVectors( EyeAngles(), &forward );
+//
+//	return ( DotProduct( forward, toTarget ) >= cosTolerance );
+//}
 
 
 //-----------------------------------------------------------------------------
@@ -597,70 +601,71 @@ bool CBaseCombatCharacter::IsLookingTowards( const Vector &target, float cosTole
 	Returns true if we are looking towards something within a tolerence determined 
 	by our field of view
 */
-bool CBaseCombatCharacter::IsInFieldOfView( CBaseEntity *entity ) const
-{
-	CBasePlayer *pPlayer = ToBasePlayer( const_cast< CBaseCombatCharacter* >( this ) );
-	float flTolerance = pPlayer ? cos( (float)pPlayer->GetFOV() * 0.5f ) : BCC_DEFAULT_LOOK_TOWARDS_TOLERANCE;
-
-	Vector vecForward;
-	Vector vecEyePosition = EyePosition();
-	AngleVectors( EyeAngles(), &vecForward );
-
-	// FIXME: Use a faster check than this!
-
-	// Check 3 spots, or else when standing right next to someone looking at their eyes, 
-	// the angle will be too great to see their center.
-	Vector vecToTarget = entity->GetAbsOrigin() - vecEyePosition;
-	vecToTarget.NormalizeInPlace();
-	if ( DotProduct( vecForward, vecToTarget ) >= flTolerance )
-		return true;
-
-	vecToTarget = entity->WorldSpaceCenter() - vecEyePosition;
-	vecToTarget.NormalizeInPlace();
-	if ( DotProduct( vecForward, vecToTarget ) >= flTolerance )
-		return true;
-
-	vecToTarget = entity->EyePosition() - vecEyePosition;
-	vecToTarget.NormalizeInPlace();
-	return ( DotProduct( vecForward, vecToTarget ) >= flTolerance );
-}
+//bool CBaseCombatCharacter::IsInFieldOfView( CBaseEntity *entity ) const
+//{
+//	CBasePlayer *pPlayer = ToBasePlayer( const_cast< CBaseCombatCharacter* >( this ) );
+//	float flTolerance = pPlayer ? cos( (float)pPlayer->GetFOV() * 0.5f ) : BCC_DEFAULT_LOOK_TOWARDS_TOLERANCE;
+//
+//	Vector vecForward;
+//	Vector vecEyePosition = EyePosition();
+//	AngleVectors( EyeAngles(), &vecForward );
+//
+//	// FIXME: Use a faster check than this!
+//
+//	// Check 3 spots, or else when standing right next to someone looking at their eyes, 
+//	// the angle will be too great to see their center.
+//	Vector vecToTarget = entity->GetAbsOrigin() - vecEyePosition;
+//	vecToTarget.NormalizeInPlace();
+//	if ( DotProduct( vecForward, vecToTarget ) >= flTolerance )
+//		return true;
+//
+//	vecToTarget = entity->WorldSpaceCenter() - vecEyePosition;
+//	vecToTarget.NormalizeInPlace();
+//	if ( DotProduct( vecForward, vecToTarget ) >= flTolerance )
+//		return true;
+//
+//	vecToTarget = entity->EyePosition() - vecEyePosition;
+//	vecToTarget.NormalizeInPlace();
+//	return ( DotProduct( vecForward, vecToTarget ) >= flTolerance );
+//}
 
 //-----------------------------------------------------------------------------
 /**
 	Returns true if we are looking towards something within a tolerence determined 
 	by our field of view
 */
-bool CBaseCombatCharacter::IsInFieldOfView( const Vector &pos ) const
-{
-	CBasePlayer *pPlayer = ToBasePlayer( const_cast< CBaseCombatCharacter* >( this ) );
-
-	if ( pPlayer )
-		return IsLookingTowards( pos, cos( (float)pPlayer->GetFOV() * 0.5f ) );
-
-	return IsLookingTowards( pos );
-}
-
-//-----------------------------------------------------------------------------
-/**
-	Strictly checks Line of Sight only.
-*/
-
-bool CBaseCombatCharacter::IsLineOfSightClear( CBaseEntity *entity, LineOfSightCheckType checkType ) const
-{
-#ifdef CLIENT_DLL
-	if ( entity->MyCombatCharacterPointer() )
-		return IsLineOfSightClear( entity->EyePosition(), checkType, entity );
-	return IsLineOfSightClear( entity->WorldSpaceCenter(), checkType, entity );
-#else
-	// FIXME: Should we do the same check here as the client does?
-	return IsLineOfSightClear( entity->WorldSpaceCenter(), checkType, entity ) || IsLineOfSightClear( entity->EyePosition(), checkType, entity ) || IsLineOfSightClear( entity->GetAbsOrigin(), checkType, entity );
-#endif
-}
+//bool CBaseCombatCharacter::IsInFieldOfView( const Vector &pos ) const
+//{
+//	CBasePlayer *pPlayer = ToBasePlayer( const_cast< CBaseCombatCharacter* >( this ) );
+//
+//	if ( pPlayer )
+//		return IsLookingTowards( pos, cos( (float)pPlayer->GetFOV() * 0.5f ) );
+//
+//	return IsLookingTowards( pos );
+//}
 
 //-----------------------------------------------------------------------------
 /**
 	Strictly checks Line of Sight only.
 */
+
+//bool CBaseCombatCharacter::IsLineOfSightClear( CBaseEntity *entity, LineOfSightCheckType checkType ) const
+//{
+//#ifdef CLIENT_DLL
+//	if ( entity->MyCombatCharacterPointer() )
+//		return IsLineOfSightClear( entity->EyePosition(), checkType, entity );
+//	return IsLineOfSightClear( entity->WorldSpaceCenter(), checkType, entity );
+//#else
+//	// FIXME: Should we do the same check here as the client does?
+//	return IsLineOfSightClear( entity->WorldSpaceCenter(), checkType, entity ) || IsLineOfSightClear( entity->EyePosition(), checkType, entity ) || IsLineOfSightClear( entity->GetAbsOrigin(), checkType, entity );
+//#endif
+//}
+
+//-----------------------------------------------------------------------------
+/**
+	Strictly checks Line of Sight only.
+*/
+/*
 static bool TraceFilterNoCombatCharacters( IHandleEntity *pServerEntity, int contentsMask )
 {
 	// Honor BlockLOS also to allow seeing through partially-broken doors
@@ -706,7 +711,8 @@ bool CBaseCombatCharacter::IsLineOfSightClear( const Vector &pos, LineOfSightChe
 		return trace.fraction == 1.0f;
 	}
 }
-
+*/
+// BG2 - VisualMelon - Porting - END
 
 /*
 //---------------------------------------------------------------------------------------------------------------------------

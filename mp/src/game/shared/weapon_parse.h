@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 23:06 22/01/2014
 #ifndef WEAPON_PARSE_H
 #define WEAPON_PARSE_H
 #ifdef _WIN32
@@ -37,7 +37,9 @@ typedef enum {
 	SPECIAL1,
 	SPECIAL2,
 	SPECIAL3,
-	TAUNT,
+	//TAUNT, // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// Add new shoot sound types here
+	//BG2 - Tjoppen - deploy sound
 	DEPLOY,
 
 	// Add new shoot sound types here
@@ -45,7 +47,7 @@ typedef enum {
 	NUM_SHOOT_SOUND_TYPES,
 } WeaponSound_t;
 
-int GetWeaponSoundFromString( const char *pszString );
+//int GetWeaponSoundFromString( const char *pszString ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 #define MAX_SHOOT_SOUNDS	16			// Maximum number of shoot sounds per shoot type
 
@@ -98,6 +100,8 @@ public:
 	int						iFlags;									// miscellaneous weapon flags
 	char					szAmmo1[MAX_WEAPON_AMMO_NAME];			// "primary" ammo type
 	char					szAmmo2[MAX_WEAPON_AMMO_NAME];			// "secondary" ammo type
+	Vector					vecIronsightPosOffset;
+	QAngle					angIronsightAngOffset;
 
 	// Sound blocks
 	char					aShootSounds[NUM_SHOOT_SOUND_TYPES][MAX_WEAPON_STRING];	
@@ -113,8 +117,9 @@ public:
 												// it is built left or right handed.
 
 // CLIENT DLL
+	//BG2 - Tjoppen - removing all HL2DM HUD stuff
 	// Sprite data, read from the data file
-	int						iSpriteCount;
+	/*int						iSpriteCount;
 	CHudTexture						*iconActive;
 	CHudTexture	 					*iconInactive;
 	CHudTexture 					*iconAmmo;
@@ -123,7 +128,7 @@ public:
 	CHudTexture 					*iconAutoaim;
 	CHudTexture 					*iconZoomedCrosshair;
 	CHudTexture 					*iconZoomedAutoaim;
-	CHudTexture						*iconSmall;
+	CHudTexture						*iconSmall;*/ // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 // TF2 specific
 	bool					bShowUsageHint;							// if true, then when you receive the weapon, show a hint about it

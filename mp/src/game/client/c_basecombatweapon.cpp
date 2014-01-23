@@ -4,6 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 22:57 22/01/2014
 #include "cbase.h"
 #include "history_resource.h"
 #include "iclientmode.h"
@@ -104,6 +105,9 @@ void C_BaseCombatWeapon::OnRestore()
 
 int C_BaseCombatWeapon::GetWorldModelIndex( void )
 {
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	if ( GameRules() )
 	{
 		const char *pBaseName = modelinfo->GetModelName( modelinfo->GetModel( m_iWorldModelIndex ) );
@@ -114,6 +118,8 @@ int C_BaseCombatWeapon::GetWorldModelIndex( void )
 			return modelinfo->GetModelIndex( pTranslatedName );
 		}
 	}
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	return m_iWorldModelIndex;
 }
@@ -150,17 +156,26 @@ void C_BaseCombatWeapon::OnDataChanged( DataUpdateType_t updateType )
 					pHudSelection->OnWeaponPickup( this );
 				}
 
-				pPlayer->EmitSound( "Player.PickupWeapon" );
+				//BG2 - Tjoppen - don't bother with pickup sounds. they steal bandwidth and sound HL2-ish
+				//pPlayer->EmitSound( "Player.PickupWeapon" );
+				//
 			}
 		}
 	}
 	else // weapon carried by other player or not at all
 	{
+		EnsureCorrectRenderingModel(); // BG2 - VisualMelon - Porting - Was only thing here in 2007, and a confusing comment
+
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+		// BG2 - VisualMelon - Porting - START
+		/*
 		int overrideModelIndex = CalcOverrideModelIndex();
 		if( overrideModelIndex != -1 && overrideModelIndex != GetModelIndex() )
 		{
 			SetModelIndex( overrideModelIndex );
 		}
+		*/
+		// BG2 - VisualMelon - Porting - END
 	}
 
 	UpdateVisibility();
@@ -224,12 +239,14 @@ void C_BaseCombatWeapon::Redraw()
 // Purpose: Draw the weapon's crosshair
 //-----------------------------------------------------------------------------
 void C_BaseCombatWeapon::DrawCrosshair()
-{
-	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
+{ // BG2 - VisualMelon - Porting - 2007 overwrite
+	//BG2 - Tjoppen - removing all HL2DM HUD stuff
+	/*C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
 	if ( !player )
 		return;
 
 	Color clr = gHUD.m_clrNormal;
+/*
 /*
 
 	// TEST: if the thing under your crosshair is on a different team, light the crosshair with a different color.
@@ -258,7 +275,7 @@ void C_BaseCombatWeapon::DrawCrosshair()
 	}		 
 */
 
-	CHudCrosshair *crosshair = GET_HUDELEMENT( CHudCrosshair );
+	/*CHudCrosshair *crosshair = GET_HUDELEMENT( CHudCrosshair );
 	if ( !crosshair )
 		return;
 
@@ -295,7 +312,7 @@ void C_BaseCombatWeapon::DrawCrosshair()
 			crosshair->SetCrosshair( GetWpnData().iconZoomedCrosshair, white );
 		else
 			crosshair->ResetCrosshair();
-	}
+	}*/
 }
 
 //-----------------------------------------------------------------------------
@@ -321,11 +338,15 @@ bool C_BaseCombatWeapon::IsCarriedByLocalPlayer( void )
 // Purpose: Returns true if this client is carrying this weapon and is
 //			using the view models
 //-----------------------------------------------------------------------------
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 bool C_BaseCombatWeapon::ShouldDrawUsingViewModel( void )
 {
 	return IsCarriedByLocalPlayer() && !C_BasePlayer::ShouldDrawLocalPlayer();
 }
-
+*/
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: Returns true if this weapon is the local client's currently wielded weapon
@@ -421,12 +442,17 @@ bool C_BaseCombatWeapon::ShouldDraw( void )
 		if ( !bIsActive )
 			return false;
 
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+		// BG2 - VisualMelon - Porting - START
+		/*
 		if ( !pOwner->ShouldDraw() )
 		{
 			// Our owner is invisible.
 			// This also tests whether the player is zoomed in, in which case you don't want to draw the weapon.
 			return false;
 		}
+		*/
+		// BG2 - VisualMelon - Porting - END
 
 		// 3rd person mode?
 		if ( !ShouldDrawLocalPlayerViewModel() )
@@ -489,7 +515,38 @@ int C_BaseCombatWeapon::DrawModel( int flags )
 			return false;
 	}
 
+	// See comment below
+	EnsureCorrectRenderingModel();
+
 	return BaseClass::DrawModel( flags );
+}
+
+// If the local player is visible (thirdperson mode, tf2 taunts, etc., then make sure that we are using the 
+//  w_ (world) model not the v_ (view) model or else the model can flicker, etc.
+// Otherwise, if we're not the local player, always use the world model
+void C_BaseCombatWeapon::EnsureCorrectRenderingModel()
+{
+	C_BasePlayer *localplayer = C_BasePlayer::GetLocalPlayer();
+	if ( localplayer && 
+		localplayer == GetOwner() &&
+		!ShouldDrawLocalPlayer() )
+	{
+		return;
+	}
+
+	// BRJ 10/14/02
+	// FIXME: Remove when Yahn's client-side prediction is done
+	// It's a hacky workaround for the model indices fighting
+	// (GetRenderBounds uses the model index, which is for the view model)
+	SetModelIndex( GetWorldModelIndex() );
+
+	// Validate our current sequence just in case ( in theory the view and weapon models should have the same sequences for sequences that overlap at least )
+	CStudioHdr *pStudioHdr = GetModelPtr();
+	if ( pStudioHdr && 
+		GetSequence() >= pStudioHdr->GetNumSeq() )
+	{
+		SetSequence( 0 );
+	}
 }
 
 
@@ -499,6 +556,9 @@ int C_BaseCombatWeapon::DrawModel( int flags )
 // the weapon timings are on the view model and not the world model. That means the
 // server needs to use the view model, but the client wants to use the world model.
 //-----------------------------------------------------------------------------
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+/*
 int C_BaseCombatWeapon::CalcOverrideModelIndex() 
 { 
 	C_BasePlayer *localplayer = C_BasePlayer::GetLocalPlayer();
@@ -513,6 +573,8 @@ int C_BaseCombatWeapon::CalcOverrideModelIndex()
 		return GetWorldModelIndex();
 	}
 }
+*/
+// BG2 - VisualMelon - Porting - END
 
 
 //-----------------------------------------------------------------------------

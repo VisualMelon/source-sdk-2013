@@ -1590,7 +1590,7 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	}
 #endif
 
-	CBaseCombatCharacter *pOwner = GetOwner();
+	//CBaseCombatCharacter *pOwner = GetOwner();
 	if (pOwner)
 	{
 		pOwner->SetNextAttack( gpGlobals->curtime + flSequenceDuration );
