@@ -3,7 +3,7 @@
 // Purpose: 
 //
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 13:51 26/01/2014
 #include "cbase.h"
 #include "base_playeranimstate.h"
 #include "tier0/vprof.h"
@@ -426,7 +426,7 @@ bool CBasePlayerAnimState::ShouldBlendAimSequenceToIdle()
 {
 	Activity act = GetCurrentMainSequenceActivity();
 
-	return (act == ACT_RUN || act == ACT_WALK || act == ACT_RUNTOIDLE || act == ACT_RUN_CROUCH);
+	return (act == ACT_RUN || act == ACT_WALK || /*act == ACT_RUNTOIDLE ||*/ act == ACT_RUN_CROUCH);
 }
 
 void CBasePlayerAnimState::ComputeAimSequence()

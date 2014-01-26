@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 15:59 25/01/2014 - nothing to do (same as before)
 #ifndef CBASE_H
 #define CBASE_H
 #ifdef _WIN32

@@ -544,6 +544,7 @@ public:
 	virtual int				GetWorldModelIndex( void );
 
 	virtual void			GetToolRecordingState( KeyValues *msg );
+	void					EnsureCorrectRenderingModel();
 
 	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	// BG2 - VisualMelon - Porting - START

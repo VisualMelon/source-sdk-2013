@@ -4,14 +4,12 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 14:31 26/01/2014
 #include "cbase.h"
 #include "movevars_shared.h"
 #include "util_shared.h"
 #include "datacache/imdlcache.h"
-#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
-#include "tf_gamerules.h"
-#endif
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF2
 
 #if defined( CLIENT_DLL )
 
@@ -20,9 +18,9 @@
 	#include "c_basedoor.h"
 	#include "c_world.h"
 	#include "view.h"
-	#include "client_virtualreality.h"
+	#include "client_virtualreality.h" // BG2 - VisualMelon - Porting - Not in 2007 code base
 	#define CRecipientFilter C_RecipientFilter
-	#include "sourcevr/isourcevirtualreality.h"
+	#include "sourcevr/isourcevirtualreality.h" // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 #else
 
@@ -37,9 +35,7 @@
 	
 #endif
 
-#if defined( CSTRIKE_DLL )
-#include "weapon_c4.h"
-#endif // CSTRIKE_DLL
+// BG2 - VisualMelon - Porting - Deleted stuff marked CSTRIKE
 
 #include "in_buttons.h"
 #include "engine/IEngineSound.h"
@@ -47,12 +43,16 @@
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 #include "decals.h"
 #include "obstacle_pushaway.h"
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 #ifdef SIXENSE
 #include "sixense/in_sixense.h"
 #endif
 
 // NVNT haptic utils
 #include "haptics/haptic_utils.h"
+// BG2 - VisualMelon - Porting - END
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -76,17 +76,15 @@
 			if ( !pEntity->VPhysicsGetObject() )
 				return false;
 
-#if defined( CSTRIKE_DLL )
-			// don't push the bomb!
-			if ( dynamic_cast<CC4*>( pEntity ) )
-				return false;
-#endif // CSTRIKE_DLL
+// BG2 - VisualMelon - Porting - Deleted stuff marked CSTRIKE
 
 			return g_pGameRules->CanEntityBeUsePushed( pEntity );
 		}
 	};
 #endif
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - sounds cool
+// BG2 - VisualMelon - Porting - START
 #ifdef CLIENT_DLL
 ConVar mp_usehwmmodels( "mp_usehwmmodels", "0", NULL, "Enable the use of the hw morph models. (-1 = never, 1 = always, 0 = based upon GPU)" ); // -1 = never, 0 = if hasfastvertextextures, 1 = always
 #endif
@@ -135,6 +133,7 @@ void CopySoundNameWithModifierToken( char *pchDest, const char *pchSource, int n
 
 	pchDest[ nDest ] = '\0';
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -145,6 +144,8 @@ float CBasePlayer::GetTimeBase( void ) const
 	return m_nTickBase * TICK_INTERVAL;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - more max-speed nonsense?
+// BG2 - VisualMelon - Porting - START
 float CBasePlayer::GetPlayerMaxSpeed()
 {
 	// player max speed is the lower limit of m_flMaxSpeed and sv_maxspeed
@@ -154,6 +155,7 @@ float CBasePlayer::GetPlayerMaxSpeed()
 
 	return fMaxSpeed;
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: Called every usercmd by the player PreThink
@@ -163,6 +165,8 @@ void CBasePlayer::ItemPreFrame()
 	// Handle use events
 	PlayerUse();
 
+	// BG2 - VisualMelon - Porting - moved about a bit
+	// BG2 - VisualMelon - Porting - START
 	CBaseCombatWeapon *pActive = GetActiveWeapon();
 
 	// Allow all the holstered weapons to update
@@ -178,11 +182,12 @@ void CBasePlayer::ItemPreFrame()
 
 		pWeapon->ItemHolsterFrame();
 	}
+	// BG2 - VisualMelon - Porting - END
 
     if ( gpGlobals->curtime < m_flNextAttack )
 		return;
 
-	if (!pActive)
+	if (!pActive) // BG2 - VisualMelon - Porting - changed from a call to GetActiveWeapon()
 		return;
 
 #if defined( CLIENT_DLL )
@@ -198,7 +203,7 @@ void CBasePlayer::ItemPreFrame()
 // Purpose: 
 // Output : Returns true on success, false on failure.
 //-----------------------------------------------------------------------------
-bool CBasePlayer::UsingStandardWeaponsInVehicle( void )
+/*bool CBasePlayer::UsingStandardWeaponsInVehicle( void )
 {
 	Assert( IsInAVehicle() );
 #if !defined( CLIENT_DLL )
@@ -220,7 +225,7 @@ bool CBasePlayer::UsingStandardWeaponsInVehicle( void )
 		return false;
 
 	return true;
-}
+}*/
 
 //-----------------------------------------------------------------------------
 // Purpose: Called every usercmd by the player PostThink
@@ -233,7 +238,7 @@ void CBasePlayer::ItemPostFrame()
 	CalcViewModelView( EyePosition(), EyeAngles() );
 
 	// Don't process items while in a vehicle.
-	if ( GetVehicle() )
+	/*if ( GetVehicle() )
 	{
 #if defined( CLIENT_DLL )
 		IClientVehicle *pVehicle = GetVehicle();
@@ -252,7 +257,7 @@ void CBasePlayer::ItemPostFrame()
 
 		if (!bUsingStandardWeapons || !GetVehicle())
 			return;
-	}
+	}*/
 
 
 	// check if the player is using something
@@ -274,7 +279,7 @@ void CBasePlayer::ItemPostFrame()
 	}
 	else
 	{
-		if ( GetActiveWeapon() && (!IsInAVehicle() || UsingStandardWeaponsInVehicle()) )
+		if ( GetActiveWeapon() /*&& (!IsInAVehicle() || UsingStandardWeaponsInVehicle())*/ )
 		{
 #if defined( CLIENT_DLL )
 			// Not predicting this weapon
@@ -365,17 +370,17 @@ const Vector CBasePlayer::GetPlayerMins( void ) const
 {
 	if ( IsObserver() )
 	{
-		return VEC_OBS_HULL_MIN_SCALED( this );	
+		return VEC_OBS_HULL_MIN_SCALED( this );	// BG2 - VisualMelon - Porting - Not in 2007 code base - add _SCALED to end of MACRO
 	}
 	else
 	{
 		if ( GetFlags() & FL_DUCKING )
 		{
-			return VEC_DUCK_HULL_MIN_SCALED( this );
+			return VEC_DUCK_HULL_MIN_SCALED( this );	// BG2 - VisualMelon - Porting - Not in 2007 code base - add _SCALED to end of MACRO
 		}
 		else
 		{
-			return VEC_HULL_MIN_SCALED( this );
+			return VEC_HULL_MIN_SCALED( this );	// BG2 - VisualMelon - Porting - Not in 2007 code base - add _SCALED to end of MACRO
 		}
 	}
 }
@@ -389,17 +394,17 @@ const Vector CBasePlayer::GetPlayerMaxs( void ) const
 {	
 	if ( IsObserver() )
 	{
-		return VEC_OBS_HULL_MAX_SCALED( this );	
+		return VEC_OBS_HULL_MAX_SCALED( this );		// BG2 - VisualMelon - Porting - Not in 2007 code base - add _SCALED to end of MACRO
 	}
 	else
 	{
 		if ( GetFlags() & FL_DUCKING )
 		{
-			return VEC_DUCK_HULL_MAX_SCALED( this );
+			return VEC_DUCK_HULL_MAX_SCALED( this );	// BG2 - VisualMelon - Porting - Not in 2007 code base - add _SCALED to end of MACRO
 		}
 		else
 		{
-			return VEC_HULL_MAX_SCALED( this );
+			return VEC_HULL_MAX_SCALED( this );	// BG2 - VisualMelon - Porting - Not in 2007 code base - add _SCALED to end of MACRO
 		}
 	}
 }
@@ -427,6 +432,8 @@ void CBasePlayer::CacheVehicleView( void )
 		pVehicle->GetVehicleViewPosition( nRole, &m_vecVehicleViewOrigin, &m_vecVehicleViewAngles, &m_flVehicleViewFOV );
 		m_nVehicleViewSavedFrame = gpGlobals->framecount;
 
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - VR
+		// BG2 - VisualMelon - Porting - START
 #ifdef CLIENT_DLL
 		if( UseVR() )
 		{
@@ -443,6 +450,7 @@ void CBasePlayer::CacheVehicleView( void )
 			}
 		}
 #endif
+		// BG2 - VisualMelon - Porting - END
 	}
 }
 
@@ -513,9 +521,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	float speed;
 	float velrun;
 	float velwalk;
+	float flduck; // BG2 - VisualMelon - Porting - Not in 2012 code base
 	int	fLadder;
 
-	if ( m_flStepSoundTime > 0 )
+	//BG2 - Tjoppen - footstep sound fix
+	/*if ( m_flStepSoundTime > 0 )
 	{
 		m_flStepSoundTime -= 1000.0f * gpGlobals->frametime;
 		if ( m_flStepSoundTime < 0 )
@@ -525,7 +535,14 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	}
 
 	if ( m_flStepSoundTime > 0 )
+		return;*/
+	if( m_flStepSoundTime > gpGlobals->curtime )
 		return;
+
+	//no sound when ducking
+	if ( GetFlags() & FL_DUCKING )
+		return;
+	//
 
 	if ( GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
 		return;
@@ -548,12 +565,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	bool movingalongground = ( groundspeed > 0.0001f );
 	bool moving_fast_enough =  ( speed >= velwalk );
 
-#ifdef PORTAL
-	// In Portal we MUST play footstep sounds even when the player is moving very slowly
-	// This is used to count the number of footsteps they take in the challenge mode
-	// -Jeep
-	moving_fast_enough = true;
-#endif
+// BG2 - VisualMelon - Porting - Deleted stuff marked PORTAL
 
 	// To hear step sounds you must be either on a ladder or moving along the ground AND
 	// You must be moving fast enough
@@ -578,13 +590,14 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 		psurface = GetLadderSurface(vecOrigin);
 		fvol = 0.5;
 
-		SetStepSoundTime( STEPSOUNDTIME_ON_LADDER, bWalking );
+		//BG2 - Tjoppen - footstep sound fix
+		//SetStepSoundTime( STEPSOUNDTIME_ON_LADDER, bWalking );
+		m_flStepSoundTime = gpGlobals->curtime + 0.350f;
+		//
 	}
-#ifdef CSTRIKE_DLL
-	else if ( enginetrace->GetPointContents( knee ) & MASK_WATER )  // we want to use the knee for Cstrike, not the waist
-#else
+// BG2 - VisualMelon - Porting - Deleted stuff marked CSTRIKE
 	else if ( GetWaterLevel() == WL_Waist )
-#endif // CSTRIKE_DLL
+// BG2 - VisualMelon - Porting - Deleted stuff marked CSTRIKE (#endif)
 	{
 		static int iSkipStep = 0;
 
@@ -600,21 +613,30 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 		}
 		psurface = physprops->GetSurfaceData( physprops->GetSurfaceIndex( "wade" ) );
 		fvol = 0.65;
-		SetStepSoundTime( STEPSOUNDTIME_WATER_KNEE, bWalking );
+		//BG2 - Tjoppen - footstep sound fix
+		//SetStepSoundTime( STEPSOUNDTIME_WATER_KNEE, bWalking );
+		m_flStepSoundTime = gpGlobals->curtime + 0.600f;
+		//
 	}
 	else if ( GetWaterLevel() == WL_Feet )
 	{
 		psurface = physprops->GetSurfaceData( physprops->GetSurfaceIndex( "water" ) );
 		fvol = bWalking ? 0.2 : 0.5;
 
-		SetStepSoundTime( STEPSOUNDTIME_WATER_FOOT, bWalking );
+		//BG2 - Tjoppen - footstep sound fix
+		//SetStepSoundTime( STEPSOUNDTIME_WATER_FOOT, bWalking );
+		m_flStepSoundTime = gpGlobals->curtime + (bWalking ? 0.400f : 0.300f);
+		//
 	}
 	else
 	{
 		if ( !psurface )
 			return;
 
-		SetStepSoundTime( STEPSOUNDTIME_NORMAL, bWalking );
+		//BG2 - Tjoppen - footstep sound fix
+		//SetStepSoundTime( STEPSOUNDTIME_NORMAL, bWalking );
+		m_flStepSoundTime = gpGlobals->curtime + (bWalking ? 0.400f : 0.300f);
+		//
 
 		switch ( psurface->game.material )
 		{
@@ -648,13 +670,21 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 			break;
 		}
 	}
+
+	m_flStepSoundTime += flduck; // slower step time if ducking
 	
 	// play the sound
 	// 65% volume if ducking
-	if ( GetFlags() & FL_DUCKING )
+	//BG2 - Tjoppen - 30% when walking, 150% when running
+	/*if ( GetFlags() & FL_DUCKING )
 	{
 		fvol *= 0.65;
-	}
+	}*/
+	if( this->m_nButtons & IN_WALK )
+		fvol *= 0.3f;
+	else
+		fvol *= 1.5f;
+	//
 
 	PlayStepSound( feet, psurface, fvol, false );
 }
@@ -669,12 +699,14 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 {
 	if ( gpGlobals->maxClients > 1 && !sv_footsteps.GetFloat() )
 		return;
-
+	
+/* // BG2 - This doesn't belong. -HairyPotter
 #if defined( CLIENT_DLL )
 	// during prediction play footstep sounds only once
 	if ( prediction->InPrediction() && !prediction->IsFirstTimePredicted() )
 		return;
 #endif
+*/
 
 	if ( !psurface )
 		return;
@@ -700,7 +732,7 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 		const char *pSoundName = physprops->GetString( stepSoundName );
 
 		// Give child classes an opportunity to override.
-		pSoundName = GetOverrideStepSound( pSoundName );
+		//pSoundName = GetOverrideStepSound( pSoundName ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 		if ( !CBaseEntity::GetParametersForSound( pSoundName, params, NULL ) )
 			return;
@@ -712,6 +744,13 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 			m_StepSoundCache[ nSide ].m_SoundParameters = params;
 		}
 	}
+
+	//BG2 - Tjoppen - footstep fix
+	if( m_flTimeStepSound + 0.1f > gpGlobals->curtime )
+		return;
+
+	m_flTimeStepSound = gpGlobals->curtime;
+	//
 
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS( vecOrigin );
@@ -727,18 +766,8 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 	EmitSound_t ep;
 	ep.m_nChannel = CHAN_BODY;
 	ep.m_pSoundName = params.soundname;
-#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
-	if( TFGameRules()->IsMannVsMachineMode() )
-	{
-		ep.m_flVolume = params.volume;
-	}
-	else
-	{
-		ep.m_flVolume = fvol;
-	}
-#else
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF
 	ep.m_flVolume = fvol;
-#endif
 	ep.m_SoundLevel = params.soundlevel;
 	ep.m_nFlags = 0;
 	ep.m_nPitch = params.pitch;
@@ -747,7 +776,7 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 	EmitSound( filter, entindex(), ep );
 
 	// Kyle says: ugggh. This function may as well be called "PerformPileOfDesperateGameSpecificFootstepHacks".
-	OnEmitFootstepSound( params, vecOrigin, fvol );
+	//OnEmitFootstepSound( params, vecOrigin, fvol ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 }
 
 void CBasePlayer::UpdateButtonState( int nUserCmdButtonMask )
@@ -768,18 +797,22 @@ void CBasePlayer::UpdateButtonState( int nUserCmdButtonMask )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CBasePlayer::GetStepSoundVelocities( float *velwalk, float *velrun )
+void CBasePlayer::GetStepSoundVelocities( float *velwalk, float *velrun, float* flduck ) // BG2 - VisualMelon - Porting - 2007 adds *flduck param
 {
 	// UNDONE: need defined numbers for run, walk, crouch, crouch run velocities!!!!	
 	if ( ( GetFlags() & FL_DUCKING) || ( GetMoveType() == MOVETYPE_LADDER ) )
 	{
 		*velwalk = 60;		// These constants should be based on cl_movespeedkey * cl_forwardspeed somehow
-		*velrun = 80;		
+		*velrun = 80;
+		//BG2 - Tjoppen - footstep sound fix
+		*flduck = 0.100f;
+		//
 	}
 	else
 	{
 		*velwalk = 90;
 		*velrun = 220;
+		*flduck = 0;
 	}
 }
 
@@ -841,6 +874,8 @@ void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon )
 //-----------------------------------------------------------------------------
 bool CBasePlayer::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex /*=0*/ ) 
 {
+	MDLCACHE_CRITICAL_SECTION(); //BG2 - This was added to fix the IsFrameLocking assert. -HairyPotter
+
 	CBaseCombatWeapon *pLastWeapon = GetActiveWeapon();
 
 	if ( BaseClass::Weapon_Switch( pWeapon, viewmodelindex ))
@@ -1424,7 +1459,10 @@ void CBasePlayer::ViewPunchReset( float tolerance )
 	if ( tolerance != 0 )
 	{
 		tolerance *= tolerance;	// square
-		float check = m_Local.m_vecPunchAngleVel->LengthSqr() + m_Local.m_vecPunchAngle->LengthSqr();
+		//BG2 - Tjoppen - non-networked punchangle
+		//float check = m_Local.m_vecPunchAngleVel->LengthSqr() + m_Local.m_vecPunchAngle->LengthSqr();
+		float check = m_Local.m_vecPunchAngleVel.LengthSqr() + m_Local.m_vecPunchAngle.LengthSqr();
+		//
 		if ( check > tolerance )
 			return;
 	}
@@ -1542,10 +1580,13 @@ void CBasePlayer::CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, 
 
 	if ( !pVehicle )
 	{
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - VR
+		// BG2 - VisualMelon - Porting - START
 #if defined( CLIENT_DLL )
 		if( UseVR() )
 			g_ClientVirtualReality.CancelTorsoTransformOverride();
 #endif
+		// BG2 - VisualMelon - Porting - END
 
 		if ( IsObserver() )
 		{
@@ -1560,11 +1601,14 @@ void CBasePlayer::CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, 
 	{
 		CalcVehicleView( pVehicle, eyeOrigin, eyeAngles, zNear, zFar, fov );
 	}
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - Haptics
+	// BG2 - VisualMelon - Porting - START
 	// NVNT update fov on the haptics dll for input scaling.
 #if defined( CLIENT_DLL )
 	if(IsLocalPlayer() && haptics)
 		haptics->UpdatePlayerFOV(fov);
 #endif
+	// BG2 - VisualMelon - Porting - END
 }
 
 
@@ -1591,6 +1635,9 @@ void CBasePlayer::CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& f
 #endif
 
 	VectorCopy( EyePosition(), eyeOrigin );
+
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - SIXENSE
+	// BG2 - VisualMelon - Porting - START
 #ifdef SIXENSE
 	if ( g_pSixenseInput->IsEnabled() )
 	{
@@ -1603,6 +1650,7 @@ void CBasePlayer::CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& f
 #else
 	VectorCopy( EyeAngles(), eyeAngles );
 #endif
+	// BG2 - VisualMelon - Porting - END
 
 #if defined( CLIENT_DLL )
 	if ( !prediction->InPrediction() )
@@ -1849,11 +1897,15 @@ void CBasePlayer::SharedSpawn()
 	m_Local.m_flFallVelocity = 0;
 
 	SetBloodColor( BLOOD_COLOR_RED );
+
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - haptics
+	// BG2 - VisualMelon - Porting - START
 	// NVNT inform haptic dll we have just spawned local player
 #ifdef CLIENT_DLL
 	if(IsLocalPlayer() &&haptics)
 		haptics->LocalPlayerReset();
 #endif
+	// BG2 - VisualMelon - Porting - END
 }
 
 
@@ -1876,8 +1928,8 @@ int CBasePlayer::GetDefaultFOV( void ) const
 #endif
 
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
-	if ( iFOV > MAX_FOV )
-		iFOV = MAX_FOV;
+	if ( iFOV > MAX_FOV ) // BG2 - VisualMelon - Porting - Not in 2007 code base - FOV max ness - seems reasonable
+		iFOV = MAX_FOV; // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	return iFOV;
 }
@@ -2031,6 +2083,8 @@ void CBasePlayer::SetPlayerUnderwater( bool state )
 {
 	if ( m_bPlayerUnderwater != state )
 	{
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - haptics
+		// BG2 - VisualMelon - Porting - START
 #if defined( WIN32 ) && !defined( _X360 ) 
 		// NVNT turn on haptic drag when underwater
 		if(state)
@@ -2038,7 +2092,14 @@ void CBasePlayer::SetPlayerUnderwater( bool state )
 		else
 			HapticSetDrag(this,0);
 #endif
+		// BG2 - VisualMelon - Porting - END
+
 		m_bPlayerUnderwater = state;
+
+		//BG2 - Tjoppen - getting under water means screwing up your shot, forcing you to reload later
+		if( GetActiveWeapon() )
+			GetActiveWeapon()->m_iClip1 = 0;	//simply empty the "clip"
+		//
 
 #ifdef CLIENT_DLL
 		if ( state )
@@ -2082,3 +2143,18 @@ bool fogparams_t::operator !=( const fogparams_t& other ) const
 	return false;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2013 copy
+// BG2 - VisualMelon - Porting - START
+void CBasePlayer::IncrementEFNoInterpParity()
+{
+	// Only matters in multiplayer
+	if ( gpGlobals->maxClients == 1 )
+		return;
+	m_ubEFNoInterpParity = (m_ubEFNoInterpParity + 1) % NOINTERP_PARITY_MAX;
+}
+
+int CBasePlayer::GetEFNoInterpParity() const
+{
+	return (int)m_ubEFNoInterpParity;
+}
+// BG2 - VisualMelon - Porting - END

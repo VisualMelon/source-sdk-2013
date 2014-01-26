@@ -4,19 +4,23 @@
 //
 // $NoKeywords: $
 //=============================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 18:14 23/01/2014
 #include "cbase.h"
 #include "baseviewmodel_shared.h"
 #include "datacache/imdlcache.h"
+#include "ironsights.h"
 
 #if defined( CLIENT_DLL )
 #include "iprediction.h"
 #include "prediction.h"
-#include "client_virtualreality.h"
-#include "sourcevr/isourcevirtualreality.h"
+#include "client_virtualreality.h" // BG2 - VisualMelon - Porting - Not in 2007 code base - left for now
+#include "sourcevr/isourcevirtualreality.h" // BG2 - VisualMelon - Porting - Not in 2007 code base - left for now
 #else
 #include "vguiscreen.h"
 #endif
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks like fun, try and keep it
+// BG2 - VisualMelon - Porting - START
 #if defined( CLIENT_DLL ) && defined( SIXENSE )
 #include "sixense/in_sixense.h"
 #include "sixense/sixense_convars_extern.h"
@@ -26,6 +30,7 @@
 extern ConVar in_forceuser;
 #include "iclientmode.h"
 #endif
+// BG2 - VisualMelon - Porting - END
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -75,6 +80,46 @@ void CBaseViewModel::UpdateOnRemove( void )
 void CBaseViewModel::Precache( void )
 {
 }
+
+//BG2 -Added for Iron Sights Testing. Credits to Jorg for the code. -HairyPotter
+void CBaseViewModel::CalcIronsights( Vector &pos, QAngle &ang )
+{
+	//CBaseCombatWeapon *pWeapon = GetOwningWeapon();
+	CBaseCombatWeapon *pWeapon = m_hWeapon.Get();
+ 
+	if ( !pWeapon )
+		return;
+ 
+	//get delta time for interpolation
+	float time = pWeapon->IsIronsighted() ? IRONSIGHTS_ANGLE_IN_TIME : IRONSIGHTS_ANGLE_OUT_TIME;
+	float delta( ( gpGlobals->curtime - pWeapon->m_flIronsightedTime ) / time );
+	float exp = ( pWeapon->IsIronsighted() ) ? 
+		( delta > 1.0f ) ? 1.0f : delta : //normal blending
+		( delta > 1.0f ) ? 0.0f : 1.0f - delta; //reverse interpolation
+ 
+	if( exp <= 0.0f ) //fully not ironsighted; save performance
+		return;
+ 
+	if( exp > 1.0f )
+		exp = 1.0f;
+
+	Vector newPos = pos;
+	QAngle newAng = ang;
+ 
+	Vector vForward, vRight, vUp, vOffset;
+	AngleVectors( newAng, &vForward, &vRight, &vUp );
+	vOffset = pWeapon->GetIronsightPositionOffset();
+ 
+	newPos += vForward * vOffset.x;
+	newPos += vRight * vOffset.y;
+	newPos += vUp * vOffset.z;
+	newAng += pWeapon->GetIronsightAngleOffset(); //This also handles the pitch...
+	//fov is handled by CBaseCombatWeapon
+ 
+	pos += ( newPos - pos ) * exp;
+	ang += ( newAng - ang ) * exp;
+}
+//
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -392,7 +437,8 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 
 	CBaseCombatWeapon *pWeapon = m_hWeapon.Get();
 	//Allow weapon lagging
-	if ( pWeapon != NULL )
+	//if ( pWeapon != NULL )
+	if( pWeapon != NULL && !pWeapon->IsIronsighted() ) //
 	{
 #if defined( CLIENT_DLL )
 		if ( !prediction->InPrediction() )
@@ -426,9 +472,13 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 		g_ClientVirtualReality.OverrideViewModelTransform( vmorigin, vmangles, pWeapon && pWeapon->ShouldUseLargeViewModelVROverride() );
 	}
 
-	SetLocalOrigin( vmorigin );
+	CalcIronsights( vmorigin, vmangles ); //BG2 -Added for Iron Sights Testing. Credits to Jorg for the code. -HairyPotter
+
+	SetLocalOrigin( Vector( vmorigin.x, vmorigin.y, vmorigin.z ) );
 	SetLocalAngles( vmangles );
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - more fun looking stuff
+	// BG2 - VisualMelon - Porting - START
 #ifdef SIXENSE
 	if( g_pSixenseInput->IsEnabled() && (owner->GetObserverMode()==OBS_MODE_NONE) && !UseVR() )
 	{
@@ -455,6 +505,7 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 		SetLocalAngles( vmangles );
 	}
 #endif
+	// BG2 - VisualMelon - Porting - END
 #endif
 
 }
@@ -633,6 +684,8 @@ void RecvProxy_SequenceNum( const CRecvProxyData *pData, void *pStruct, void *pO
 	}
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - this will probably be broken soon - when it is, feel free to comment
+// BG2 - VisualMelon - Porting - START
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -687,5 +740,6 @@ bool CBaseViewModel::GetAttachmentVelocity( int number, Vector &originVel, Quate
 
 	return BaseClass::GetAttachmentVelocity( number, originVel, angleVel );
 }
+// BG2 - VisualMelon - Porting - END
 
 #endif

@@ -79,7 +79,7 @@ void C_BaseCombatWeapon::NotifyShouldTransmit( ShouldTransmitState_t state )
 //-----------------------------------------------------------------------------
 // Purpose: To wrap PORTAL mod specific functionality into one place
 //-----------------------------------------------------------------------------
-static inline bool ShouldDrawLocalPlayerViewModel( void )
+static inline bool ShouldDrawLocalPlayer( void ) // BG2 - VisualMelon - Porting - ShouldDrawLocalPlayer is the name from 2013, '07 was ShouldDrawLocalPlayer (put in)
 {
 #if defined( PORTAL )
 	return false;

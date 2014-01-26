@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 16:16 25/01/2014
 #ifndef SHAREDDEFS_H
 #define SHAREDDEFS_H
 #ifdef _WIN32
@@ -84,6 +84,8 @@ public:
 
 #define VEC_DEAD_VIEWHEIGHT	g_pGameRules->GetViewVectors()->m_vDeadViewHeight
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - left in for now, just defines stuff
+// BG2 - VisualMelon - Porting - START
 // If the player (enemy bots) are scaled, adjust the hull
 #define VEC_VIEW_SCALED( player )				( g_pGameRules->GetViewVectors()->m_vView * player->GetModelScale() )
 #define VEC_HULL_MIN_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMin * player->GetModelScale() )
@@ -97,20 +99,21 @@ public:
 #define VEC_OBS_HULL_MAX_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vObsHullMax * player->GetModelScale() )
 
 #define VEC_DEAD_VIEWHEIGHT_SCALED( player )	( g_pGameRules->GetViewVectors()->m_vDeadViewHeight * player->GetModelScale() )
+// BG2 - VisualMelon - Porting - END
 
 #define WATERJUMP_HEIGHT			8
 
-#define MAX_CLIMB_SPEED		200
+#define MAX_CLIMB_SPEED		100 //BG2 - Down from 200 - HairyPotter
 
 #if defined(TF_DLL) || defined(TF_CLIENT_DLL)
 	#define TIME_TO_DUCK		0.2
-	#define TIME_TO_DUCK_MS		200.0f
+	#define TIME_TO_DUCK_MS		200.0f // BG2 - VisualMelon - Porting - Not in 2007 code base
 #else
 	#define TIME_TO_DUCK		0.4
-	#define TIME_TO_DUCK_MS		400.0f
+	#define TIME_TO_DUCK_MS		400.0f // BG2 - VisualMelon - Porting - Not in 2007 code base
 #endif 
 #define TIME_TO_UNDUCK		0.2
-#define TIME_TO_UNDUCK_MS	200.0f
+#define TIME_TO_UNDUCK_MS	200.0f // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 #define MAX_WEAPON_SLOTS		6	// hud item selection slots
 #define MAX_WEAPON_POSITIONS	20	// max number of items within a slot
@@ -128,7 +131,10 @@ public:
 #define HUD_PRINTCONSOLE	2
 #define HUD_PRINTTALK		3
 #define HUD_PRINTCENTER		4
+#define HUD_BG2CLASSCHANGE  5 //BG2 - Added for the Class Change Filter. -HairyPotter
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - no idea what the hell this is for, but it's only definitions
+// BG2 - VisualMelon - Porting - START
 // Vote creation or processing failure codes
 typedef enum
 {
@@ -179,6 +185,7 @@ enum CastVote
 	VOTE_OPTION5,
 	VOTE_UNCAST
 };
+// BG2 - VisualMelon - Porting - Not in 2007 code base - END
 
 //===================================================================================================================
 // Close caption flags
@@ -221,6 +228,8 @@ enum CastVote
 //  and have a good answer for a bunch of perf question related to player simulation, thinking logic, tracelines, networking overhead, etc.
 // But if you are brave or are doing something interesting, go for it...   ywb 9/22/03
 
+// BG2 - VisualMelon - Porting - weird change there, this comment below hopefully explains (MAX nums are ++'d)
+// BG2 - VisualMelon - Porting - START
 //You might be wondering why these aren't multiple of 2. Well the reason is that if servers decide to have HLTV or Replay enabled we need the extra slot.
 //This is ok since MAX_PLAYERS is used for code specific things like arrays and loops, but it doesn't really means that this is the max number of players allowed
 //Since this is decided by the gamerules (and it can be whatever number as long as its less than MAX_PLAYERS).
@@ -229,14 +238,15 @@ enum CastVote
 #else
 	#define MAX_PLAYERS				33  // Absolute max players supported
 #endif
+// BG2 - VisualMelon - Porting - END
 
 #define MAX_PLACE_NAME_LENGTH		18
 
-#define MAX_FOV						90
+#define MAX_FOV						90 // BG2 - VisualMelon - Porting - Not in 2007 code base - looks harmless enough
 
 //===================================================================================================================
 // Team Defines
-#define TEAM_ANY				-2
+//#define TEAM_ANY				-2 // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 #define	TEAM_INVALID			-1
 #define TEAM_UNASSIGNED			0	// not assigned to a team
 #define TEAM_SPECTATOR			1	// spectator team
@@ -307,6 +317,9 @@ enum
 	MUZZLEFLASH_357,
 	MUZZLEFLASH_RPG,
 	MUZZLEFLASH_COMBINE_TURRET,
+	//BG2 - Tjoppen - flashpan
+	MUZZLEFLASH_FLASHPAN,
+	//
 
 	MUZZLEFLASH_FIRSTPERSON		= 0x100,
 };
@@ -359,6 +372,10 @@ enum PLAYER_ANIM
 	PLAYER_RELOAD,
 	PLAYER_START_AIMING,
 	PLAYER_LEAVE_AIMING,
+
+	//BG2 - Tjoppen - PLAYER_ATTACK2
+	PLAYER_ATTACK2,
+	PLAYER_HOLSTER,
 };
 
 #ifdef HL2_DLL
@@ -468,7 +485,7 @@ enum {
 	OBS_ALLOW_TEAM,		// allow only own team & first person, no PIP
 	OBS_ALLOW_NONE,		// don't allow any spectating after death (fixed & fade to black)
 
-	OBS_ALLOW_NUM_MODES,
+	OBS_ALLOW_NUM_MODES, // BG2 - VisualMelon - Porting - Not in 2007 code base
 };
 
 enum
@@ -479,6 +496,8 @@ enum
 	TYPE_FILE,		// show this local file
 } ;
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - more enums?
+// BG2 - VisualMelon - Porting - START
 //=============================================================================
 // HPE_BEGIN:
 // [Forrest] Replaced text window command string with TEXTWINDOW_CMD enumeration
@@ -498,6 +517,7 @@ enum
 //=============================================================================
 // HPE_END
 //=============================================================================
+// BG2 - VisualMelon - Porting - END
 
 // VGui Screen Flags
 enum
@@ -525,8 +545,8 @@ typedef enum
 #define COLOR_YELLOW	Color(255, 178, 0, 255)
 #define COLOR_GREEN		Color(153, 255, 153, 255)
 #define COLOR_GREY		Color(204, 204, 204, 255)
-#define COLOR_WHITE		Color(255, 255, 255, 255)
-#define COLOR_BLACK		Color(0, 0, 0, 255)
+#define COLOR_WHITE		Color(255, 255, 255, 255) // BG2 - VisualMelon - Porting - Not in 2007 code base
+#define COLOR_BLACK		Color(0, 0, 0, 255) // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 // All NPCs need this data
 enum
@@ -688,6 +708,10 @@ struct FireBulletsInfo_t
 		m_vecDirShooting.Init( VEC_T_NAN, VEC_T_NAN, VEC_T_NAN );
 #endif
 		m_bPrimaryAttack = true;
+
+		//BG2 - Tjoppen - stuff for arcscan bullet
+		m_bArc = false;
+		//
 	}
 
 	FireBulletsInfo_t( int nShots, const Vector &vecSrc, const Vector &vecDir, const Vector &vecSpread, float flDistance, int nAmmoType, bool bPrimaryAttack = true )
@@ -706,6 +730,10 @@ struct FireBulletsInfo_t
 		m_pAdditionalIgnoreEnt = NULL;
 		m_flDamageForceScale = 1.0f;
 		m_bPrimaryAttack = bPrimaryAttack;
+
+		//BG2 - Tjoppen - stuff for arcscan bullet
+		m_bArc = false;
+		//
 	}
 
 	int m_iShots;
@@ -722,6 +750,14 @@ struct FireBulletsInfo_t
 	CBaseEntity *m_pAttacker;
 	CBaseEntity *m_pAdditionalIgnoreEnt;
 	bool m_bPrimaryAttack;
+
+	//BG2 - Tjoppen - stuff for arcscan bullets
+	bool m_bArc;
+	float m_flMuzzleVelocity;		//typically 14400 = 1200 fps ~= 365 m/s
+	float m_flRelativeDrag;			//drag = m_flRelativeDrag * sv_simulatedbullets_drag
+	float m_flConstantDamageRange;	//after this range, damage becomes m_iPlayerDamage*velocity^2/m_flMuzzleVelocity^2
+	//
+
 };
 
 //-----------------------------------------------------------------------------
@@ -812,7 +848,7 @@ struct EmitSound_t
 	soundlevel_t				m_SoundLevel;
 	int							m_nFlags;
 	int							m_nPitch;
-	int							m_nSpecialDSP;
+	int							m_nSpecialDSP; // BG2 - VisualMelon - Porting - Not in 2007 code base
 	const Vector				*m_pOrigin;
 	float						m_flSoundTime; ///< NOT DURATION, but rather, some absolute time in the future until which this sound should be delayed
 	float						*m_pflSoundDuration;
@@ -850,12 +886,15 @@ struct EmitSound_t
 // Score added to the team score for a round win
 #define TEAMPLAY_ROUND_WIN_SCORE	1
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 enum
 {
 	CP_WARN_NORMAL = 0,
 	CP_WARN_FINALCAP,
 	CP_WARN_NO_ANNOUNCEMENTS
 };
+// BG2 - VisualMelon - Porting - END
 
 // YWB:  3/12/2007
 // Changing the following #define for Prediction Error checking (See gamemovement.cpp for overview) will to 1 or 2 enables the system, 0 turns it off
@@ -899,6 +938,8 @@ enum
 #define COMMENTARY_BUTTONS		(IN_USE)
 #endif
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - OMG so mcuh definition
+// BG2 - VisualMelon - Porting - START
 #define TEAM_TRAIN_MAX_TEAMS			4
 #define TEAM_TRAIN_MAX_HILLS			5
 #define TEAM_TRAIN_FLOATS_PER_HILL		2
@@ -944,5 +985,6 @@ enum
 	MAX_VISION_MODES
 };
 #endif // TF_DLL || TF_CLIENT_DLL
+// BG2 - VisualMelon - Porting - END
 
 #endif // SHAREDDEFS_H

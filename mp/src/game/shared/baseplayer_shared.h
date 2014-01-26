@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 13:54 26/01/2014
 #ifndef BASEPLAYER_SHARED_H
 #define BASEPLAYER_SHARED_H
 #ifdef _WIN32
@@ -32,6 +32,13 @@
 
 #define DEATH_ANIMATION_TIME	3.0f
 
+// BG2 - VisualMelon - Porting - Not in 2013 code base
+// BG2 - VisualMelon - Porting - START
+// multiplayer only
+#define NOINTERP_PARITY_MAX			4
+#define NOINTERP_PARITY_MAX_BITS	2
+// BG2 - VisualMelon - Porting - END
+
 typedef struct 
 {
 	Vector		m_vecAutoAimDir;		// The direction autoaim wishes to point.
@@ -51,7 +58,7 @@ enum stepsoundtimes_t
 	STEPSOUNDTIME_WATER_FOOT,
 };
 
-void CopySoundNameWithModifierToken( char *pchDest, const char *pchSource, int nMaxLenInChars, const char *pchToken );
+void CopySoundNameWithModifierToken( char *pchDest, const char *pchSource, int nMaxLenInChars, const char *pchToken ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 // Shared header file for players
 #if defined( CLIENT_DLL )

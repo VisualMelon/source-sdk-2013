@@ -5,6 +5,7 @@
 //			- Manages the player's flashlight effect.
 //
 //===========================================================================//
+// BG2 - VisualMelon - Porting - Initial Port Completed at 04:59 24/01/2014
 #include "cbase.h"
 #include "c_baseplayer.h"
 #include "flashlighteffect.h"
@@ -39,23 +40,28 @@
 #include "vgui/ISurface.h"
 #include "voice_status.h"
 #include "fx.h"
-#include "dt_utlvector_recv.h"
-#include "cam_thirdperson.h"
-#if defined( REPLAY_ENABLED )
-#include "replay/replaycamera.h"
-#include "replay/ireplaysystem.h"
-#include "replay/ienginereplay.h"
-#endif
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
+//#include "dt_utlvector_recv.h"
+//#include "cam_thirdperson.h"
+//#if defined( REPLAY_ENABLED )
+//#include "replay/replaycamera.h"
+//#include "replay/ireplaysystem.h"
+//#include "replay/ienginereplay.h"
+//#endif
+// BG2 - VisualMelon - Porting - END
+
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks like fun
+// BG2 - VisualMelon - Porting - START
 #include "steam/steam_api.h"
 #include "sourcevr/isourcevirtualreality.h"
 #include "client_virtualreality.h"
+// BG2 - VisualMelon - Porting - END
 
-#if defined USES_ECON_ITEMS
-#include "econ_wearable.h"
-#endif
+// BG2 - VisualMelon - Porting - Deleted form ECONS
 
 // NVNT haptics system interface
-#include "haptics/ihaptics.h"
+#include "haptics/ihaptics.h" // BG2 - VisualMelon - Porting - Not in 2007 code base - I think I've been leaving these in, I'm allready starting to loose track of time
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -99,35 +105,29 @@ static ConVar	cl_smoothtime	(
 	true, 2.0
 	 );
 
-#ifdef CSTRIKE_DLL
-ConVar	spec_freeze_time( "spec_freeze_time", "5.0", FCVAR_CHEAT | FCVAR_REPLICATED, "Time spend frozen in observer freeze cam." );
-ConVar	spec_freeze_traveltime( "spec_freeze_traveltime", "0.7", FCVAR_CHEAT | FCVAR_REPLICATED, "Time taken to zoom in to frame a target in observer freeze cam.", true, 0.01, false, 0 );
-ConVar	spec_freeze_distance_min( "spec_freeze_distance_min", "80", FCVAR_CHEAT, "Minimum random distance from the target to stop when framing them in observer freeze cam." );
-ConVar	spec_freeze_distance_max( "spec_freeze_distance_max", "90", FCVAR_CHEAT, "Maximum random distance from the target to stop when framing them in observer freeze cam." );
-#else
+// BG2 - VisualMelon - Porting - Deleted stuff marked CSTRIKE
 ConVar	spec_freeze_time( "spec_freeze_time", "4.0", FCVAR_CHEAT | FCVAR_REPLICATED, "Time spend frozen in observer freeze cam." );
 ConVar	spec_freeze_traveltime( "spec_freeze_traveltime", "0.4", FCVAR_CHEAT | FCVAR_REPLICATED, "Time taken to zoom in to frame a target in observer freeze cam.", true, 0.01, false, 0 );
 ConVar	spec_freeze_distance_min( "spec_freeze_distance_min", "96", FCVAR_CHEAT, "Minimum random distance from the target to stop when framing them in observer freeze cam." );
 ConVar	spec_freeze_distance_max( "spec_freeze_distance_max", "200", FCVAR_CHEAT, "Maximum random distance from the target to stop when framing them in observer freeze cam." );
-#endif
 
-static ConVar	cl_first_person_uses_world_model ( "cl_first_person_uses_world_model", "0", FCVAR_ARCHIVE, "Causes the third person model to be drawn instead of the view model" );
+static ConVar	cl_first_person_uses_world_model ( "cl_first_person_uses_world_model", "0", FCVAR_ARCHIVE, "Causes the third person model to be drawn instead of the view model" ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
-ConVar demo_fov_override( "demo_fov_override", "0", FCVAR_CLIENTDLL | FCVAR_DONTRECORD, "If nonzero, this value will be used to override FOV during demo playback." );
+ConVar demo_fov_override( "demo_fov_override", "0", FCVAR_CLIENTDLL | FCVAR_DONTRECORD, "If nonzero, this value will be used to override FOV during demo playback." ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 // This only needs to be approximate - it just controls the distance to the pivot-point of the head ("the neck") of the in-game character, not the player's real-world neck length.
 // Ideally we would find this vector by subtracting the neutral-pose difference between the head bone (the pivot point) and the "eyes" attachment point.
 // However, some characters don't have this attachment point, and finding the neutral pose is a pain.
 // This value is found by hand, and a good value depends more on the in-game models than on actual human shapes.
-ConVar cl_meathook_neck_pivot_ingame_up( "cl_meathook_neck_pivot_ingame_up", "7.0" );
-ConVar cl_meathook_neck_pivot_ingame_fwd( "cl_meathook_neck_pivot_ingame_fwd", "3.0" );
+ConVar cl_meathook_neck_pivot_ingame_up( "cl_meathook_neck_pivot_ingame_up", "7.0" ); // BG2 - VisualMelon - Porting - Not in 2007 code base
+ConVar cl_meathook_neck_pivot_ingame_fwd( "cl_meathook_neck_pivot_ingame_fwd", "3.0" ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 void RecvProxy_LocalVelocityX( const CRecvProxyData *pData, void *pStruct, void *pOut );
 void RecvProxy_LocalVelocityY( const CRecvProxyData *pData, void *pStruct, void *pOut );
 void RecvProxy_LocalVelocityZ( const CRecvProxyData *pData, void *pStruct, void *pOut );
 
 void RecvProxy_ObserverTarget( const CRecvProxyData *pData, void *pStruct, void *pOut );
-void RecvProxy_ObserverMode  ( const CRecvProxyData *pData, void *pStruct, void *pOut );
+void RecvProxy_ObserverMode  ( const CRecvProxyData *pData, void *pStruct, void *pOut ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 // -------------------------------------------------------------------------------- //
 // RecvTable for CPlayerState.
@@ -155,6 +155,8 @@ BEGIN_RECV_TABLE_NOBASE( CPlayerLocalData, DT_Local )
 	RecvPropFloat	(RECVINFO(m_flJumpTime)),
 	RecvPropFloat	(RECVINFO(m_flFallVelocity)),
 
+//BG2 - Tjoppen - no punchangle over the network!
+/*
 #if PREDICTION_ERROR_CHECK_LEVEL > 1 
 	RecvPropFloat	(RECVINFO_NAME( m_vecPunchAngle.m_Value[0], m_vecPunchAngle[0])),
 	RecvPropFloat	(RECVINFO_NAME( m_vecPunchAngle.m_Value[1], m_vecPunchAngle[1])),
@@ -166,9 +168,11 @@ BEGIN_RECV_TABLE_NOBASE( CPlayerLocalData, DT_Local )
 	RecvPropVector	(RECVINFO(m_vecPunchAngle)),
 	RecvPropVector	(RECVINFO(m_vecPunchAngleVel)),
 #endif
+*/
+//
 
 	RecvPropInt		(RECVINFO(m_bDrawViewmodel)),
-	RecvPropInt		(RECVINFO(m_bWearingSuit)),
+	//RecvPropInt		(RECVINFO(m_bWearingSuit)), //Testing - HairyPotter
 	RecvPropBool	(RECVINFO(m_bPoisoned)),
 	RecvPropFloat	(RECVINFO(m_flStepSize)),
 	RecvPropInt		(RECVINFO(m_bAllowAutoMovement)),
@@ -252,18 +256,14 @@ END_RECV_TABLE()
 // DT_BasePlayer datatable.
 // -------------------------------------------------------------------------------- //
 
-#if defined USES_ECON_ITEMS
-	EXTERN_RECV_TABLE(DT_AttributeList);
-#endif
+// BG2 - VisualMelon - Porting - Deleted ECON
 
 	IMPLEMENT_CLIENTCLASS_DT(C_BasePlayer, DT_BasePlayer, CBasePlayer)
 		// We have both the local and nonlocal data in here, but the server proxies
 		// only send one.
 		RecvPropDataTable( "localdata", 0, 0, &REFERENCE_RECV_TABLE(DT_LocalPlayerExclusive) ),
-
-#if defined USES_ECON_ITEMS
-		RecvPropDataTable(RECVINFO_DT(m_AttributeList),0, &REFERENCE_RECV_TABLE(DT_AttributeList) ),
-#endif
+		
+// BG2 - VisualMelon - Porting - Deleted ECON
 
 		RecvPropDataTable(RECVINFO_DT(pl), 0, &REFERENCE_RECV_TABLE(DT_PlayerState), DataTableRecvProxy_StaticDataTable),
 
@@ -275,14 +275,18 @@ END_RECV_TABLE()
 
 		RecvPropEHandle( RECVINFO(m_hVehicle) ),
 		RecvPropEHandle( RECVINFO(m_hUseEntity) ),
-
-		RecvPropInt		(RECVINFO(m_iHealth)),
+		
+		//BG2 - Tjoppen - health fix
+		//RecvPropInt		(RECVINFO(m_iHealth)),
+		//
 		RecvPropInt		(RECVINFO(m_lifeState)),
 
 		RecvPropInt		(RECVINFO(m_iBonusProgress)),
 		RecvPropInt		(RECVINFO(m_iBonusChallenge)),
-
-		RecvPropFloat	(RECVINFO(m_flMaxspeed)),
+		
+		//BG2 - Tjoppen - max speed is figured out by client
+		//RecvPropFloat	(RECVINFO(m_flMaxspeed)),
+		//
 		RecvPropInt		(RECVINFO(m_fFlags)),
 
 
@@ -293,9 +297,9 @@ END_RECV_TABLE()
 
 		RecvPropString( RECVINFO(m_szLastPlaceName) ),
 
-#if defined USES_ECON_ITEMS
-		RecvPropUtlVector( RECVINFO_UTLVECTOR( m_hMyWearables ), MAX_WEARABLES_SENT_FROM_SERVER,	RecvPropEHandle(NULL, 0, 0) ),
-#endif
+		RecvPropInt( RECVINFO( m_ubEFNoInterpParity ) ), // BG2 - VisualMelon - Porting - Not in 2013 code base
+
+// BG2 - VisualMelon - Porting - Deleted ECON stuff
 
 	END_RECV_TABLE()
 
@@ -317,15 +321,18 @@ BEGIN_PREDICTION_DATA_NO_BASE( CPlayerLocalData )
 	DEFINE_FIELD( m_nStepside, FIELD_INTEGER ),
 
 	DEFINE_PRED_FIELD( m_iHideHUD, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
-#if PREDICTION_ERROR_CHECK_LEVEL > 1
+//BG2 - Tjoppen - no punchangle over the network!
+/*#if PREDICTION_ERROR_CHECK_LEVEL > 1
 	DEFINE_PRED_FIELD( m_vecPunchAngle, FIELD_VECTOR, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_vecPunchAngleVel, FIELD_VECTOR, FTYPEDESC_INSENDTABLE ),
 #else
 	DEFINE_PRED_FIELD_TOL( m_vecPunchAngle, FIELD_VECTOR, FTYPEDESC_INSENDTABLE, 0.125f ),
 	DEFINE_PRED_FIELD_TOL( m_vecPunchAngleVel, FIELD_VECTOR, FTYPEDESC_INSENDTABLE, 0.125f ),
 #endif
+*/
+//
 	DEFINE_PRED_FIELD( m_bDrawViewmodel, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_bWearingSuit, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_bWearingSuit, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ), // BG2 - VisualMelon - Porting - Not in 2007 code base
 	DEFINE_PRED_FIELD( m_bPoisoned, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_bAllowAutoMovement, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 
@@ -354,11 +361,15 @@ BEGIN_PREDICTION_DATA( C_BasePlayer )
 	DEFINE_PRED_FIELD( m_iFOVStart, FIELD_INTEGER, 0 ),
 
 	DEFINE_PRED_FIELD( m_hVehicle, FIELD_EHANDLE, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD_TOL( m_flMaxspeed, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, 0.5f ),
+	//BG2 - Tjoppen - max speed is figured out by client
+	//DEFINE_PRED_FIELD_TOL( m_flMaxspeed, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, 0.5f ),
+	//
 	DEFINE_PRED_FIELD( m_iHealth, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_iBonusProgress, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_iBonusChallenge, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_fOnTarget, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+	//BG2 - Tjoppen - we don't need m_fOnTarget
+	//DEFINE_PRED_FIELD( m_fOnTarget, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+	//
 	DEFINE_PRED_FIELD( m_nNextThinkTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_lifeState, FIELD_CHARACTER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_nWaterLevel, FIELD_CHARACTER, FTYPEDESC_INSENDTABLE ),
@@ -368,7 +379,9 @@ BEGIN_PREDICTION_DATA( C_BasePlayer )
 	DEFINE_FIELD( m_nButtons, FIELD_INTEGER ),
 	DEFINE_FIELD( m_flWaterJumpTime, FIELD_FLOAT ),
 	DEFINE_FIELD( m_nImpulse, FIELD_INTEGER ),
-	DEFINE_FIELD( m_flStepSoundTime, FIELD_FLOAT ),
+	//BG2 - Tjoppen - footstep fix
+	//DEFINE_FIELD( m_flStepSoundTime, FIELD_FLOAT ),
+	//
 	DEFINE_FIELD( m_flSwimSoundTime, FIELD_FLOAT ),
 	DEFINE_FIELD( m_vecLadderNormal, FIELD_VECTOR ),
 	DEFINE_FIELD( m_flPhysics, FIELD_INTEGER ),
@@ -431,13 +444,13 @@ C_BasePlayer::C_BasePlayer() : m_iv_vecViewOffset( "C_BasePlayer::m_iv_vecViewOf
 	m_surfaceFriction = 1.0f;
 	m_chTextureType = 0;
 
-	m_flNextAchievementAnnounceTime = 0;
+	//m_flNextAchievementAnnounceTime = 0; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	m_bFiredWeapon = false;
 
-	m_nForceVisionFilterFlags = 0;
+	//m_nForceVisionFilterFlags = 0; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
-	ListenForGameEvent( "base_player_teleported" );
+	//ListenForGameEvent( "base_player_teleported" ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 }
 
 //-----------------------------------------------------------------------------
@@ -451,7 +464,10 @@ C_BasePlayer::~C_BasePlayer()
 		s_pLocalPlayer = NULL;
 	}
 
-	delete m_pFlashlight;
+	if (m_pFlashlight)
+	{
+		delete m_pFlashlight;
+	}
 }
 
 
@@ -502,6 +518,8 @@ bool C_BasePlayer::IsHLTV() const
 	return ( IsLocalPlayer() && engine->IsHLTV() );	
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 bool C_BasePlayer::IsReplay() const
 {
 #if defined( REPLAY_ENABLED )
@@ -510,7 +528,10 @@ bool C_BasePlayer::IsReplay() const
 	return false;
 #endif
 }
+// BG2 - VisualMelon - Porting - END
 
+// BG2 - VisualMelon - Porting - Most of this function isn't in 2007... but it wasn't erroring so I'm leaving it for now. BEWARE
+// BG2 - VisualMelon - Porting - START
 CBaseEntity	*C_BasePlayer::GetObserverTarget() const	// returns players target or NULL
 {
 #ifndef _XBOX
@@ -558,6 +579,7 @@ CBaseEntity	*C_BasePlayer::GetObserverTarget() const	// returns players target o
 		return m_hObserverTarget;
 	}
 }
+// BG2 - VisualMelon - Porting - END
 
 // Called from Recv Proxy, mainly to reset tone map scale
 void C_BasePlayer::SetObserverTarget( EHANDLE hObserverTarget )
@@ -574,11 +596,11 @@ void C_BasePlayer::SetObserverTarget( EHANDLE hObserverTarget )
 		// has a chance to become non-NULL even if it currently resolves to NULL.
 		m_hObserverTarget.Init( hObserverTarget.GetEntryIndex(), hObserverTarget.GetSerialNumber() );
 
-		IGameEvent *event = gameeventmanager->CreateEvent( "spec_target_updated" );
+		/*IGameEvent *event = gameeventmanager->CreateEvent( "spec_target_updated" );
 		if ( event )
 		{
 			gameeventmanager->FireEventClientSide( event );
-		}
+		}*/
 
 		if ( IsLocalPlayer() )
 		{
@@ -611,6 +633,8 @@ void C_BasePlayer::SetObserverMode ( int iNewMode )
 }
 
 
+// BG2 - VisualMelon - Porting - Most of this function isn't in 2007... but it wasn't erroring so I'm leaving it for now. BEWARE
+// BG2 - VisualMelon - Porting - START
 int C_BasePlayer::GetObserverMode() const 
 { 
 #ifndef _XBOX
@@ -651,16 +675,20 @@ int C_BasePlayer::GetObserverMode() const
 
 	return m_iObserverMode; 
 }
+// BG2 - VisualMelon - Porting - END
 
 bool C_BasePlayer::ViewModel_IsTransparent( void )
 {
 	return IsTransparent();
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 bool C_BasePlayer::ViewModel_IsUsingFBTexture( void )
 {
 	return UsesPowerOfTwoFrameBufferTexture();
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Used by prediction, sets the view angles for the player
@@ -707,6 +735,8 @@ surfacedata_t* C_BasePlayer::GetGroundSurface()
 	return physprops->GetSurfaceData( trace.surface.surfaceProps );
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 void C_BasePlayer::FireGameEvent( IGameEvent *event )
 {
 	if ( FStrEq( event->GetName(), "base_player_teleported" ) )
@@ -721,6 +751,7 @@ void C_BasePlayer::FireGameEvent( IGameEvent *event )
 	}
 
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // returns the player name
@@ -775,6 +806,8 @@ void C_BasePlayer::OnPreDataChanged( DataUpdateType_t updateType )
 void C_BasePlayer::PreDataUpdate( DataUpdateType_t updateType )
 {
 	BaseClass::PreDataUpdate( updateType );
+
+	m_ubOldEFNoInterpParity = m_ubEFNoInterpParity;
 }
 
 //-----------------------------------------------------------------------------
@@ -840,13 +873,16 @@ void C_BasePlayer::PostDataUpdate( DataUpdateType_t updateType )
 			m_flOldPlayerZ = GetLocalOrigin().z;
 			// NVNT the local player has just been created.
 			//   set in the "on_foot" navigation.
+			// BG2 - VisualMelon - Porting - Not in 2007 code base
+			// BG2 - VisualMelon - Porting - START
 			if ( haptics )
 			{
 				haptics->LocalPlayerReset();
 				haptics->SetNavigationClass("on_foot");
 				haptics->ProcessHapticEvent(2,"Movement","BasePlayer");
 			}
-		
+			// BG2 - VisualMelon - Porting - END
+
 		}
 		SetLocalAngles( angles );
 
@@ -857,7 +893,7 @@ void C_BasePlayer::PostDataUpdate( DataUpdateType_t updateType )
 			m_flFreezeFrameDistance = RandomFloat( spec_freeze_distance_min.GetFloat(), spec_freeze_distance_max.GetFloat() );
 			m_flFreezeZOffset = RandomFloat( -30, 20 );
 			m_bSentFreezeFrame = false;
-			m_nForceVisionFilterFlags = 0;
+			m_nForceVisionFilterFlags = 0; // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 			C_BaseEntity *target = GetObserverTarget();
 			if ( target && target->IsPlayer() )
@@ -865,17 +901,22 @@ void C_BasePlayer::PostDataUpdate( DataUpdateType_t updateType )
 				C_BasePlayer *player = ToBasePlayer( target );
 				if ( player )
 				{
-					m_nForceVisionFilterFlags = player->GetVisionFilterFlags();
+					m_nForceVisionFilterFlags = player->GetVisionFilterFlags(); // BG2 - VisualMelon - Porting - Not in 2007 code base
 					CalculateVisionUsingCurrentFlags();
 				}
 			}
 
+			// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+			// BG2 - VisualMelon - Porting - START
+			/*
 			IGameEvent *pEvent = gameeventmanager->CreateEvent( "show_freezepanel" );
 			if ( pEvent )
 			{
 				pEvent->SetInt( "killer", target ? target->entindex() : 0 );
 				gameeventmanager->FireEventClientSide( pEvent );
 			}
+			*/
+			// BG2 - VisualMelon - Porting - END
 
 			// Force the sound mixer to the freezecam mixer
 			ConVar *pVar = (ConVar *)cvar->FindVar( "snd_soundmixer" );
@@ -894,8 +935,8 @@ void C_BasePlayer::PostDataUpdate( DataUpdateType_t updateType )
 			ConVar *pVar = (ConVar *)cvar->FindVar( "snd_soundmixer" );
 			pVar->Revert();
 
-			m_nForceVisionFilterFlags = 0;
-			CalculateVisionUsingCurrentFlags();
+			m_nForceVisionFilterFlags = 0; // BG2 - VisualMelon - Porting - Not in 2007 code base
+			CalculateVisionUsingCurrentFlags(); // BG2 - VisualMelon - Porting - Not in 2007 code base
 		}
 	}
 
@@ -1385,21 +1426,28 @@ bool C_BasePlayer::ShouldInterpolate()
 
 bool C_BasePlayer::ShouldDraw()
 {
-	return ShouldDrawThisPlayer() && BaseClass::ShouldDraw();
+	return ( !IsLocalPlayer() || C_BasePlayer::ShouldDrawLocalPlayer() || (GetObserverMode() == OBS_MODE_DEATHCAM ) ) &&
+		   BaseClass::ShouldDraw(); // BG2 - VisualMelon - Porting - 2007 copy
+	//return ShouldDrawThisPlayer() && BaseClass::ShouldDraw(); // BG2 - VisualMelon - Porting - 2013 copy
 }
 
+// BG2 - VisualMelon - Porting - 2007 overwrite
+// BG2 - VisualMelon - Porting - START
 int C_BasePlayer::DrawModel( int flags )
 {
-#ifndef PORTAL
-	// In Portal this check is already performed as part of
-	// C_Portal_Player::DrawModel()
-	if ( !ShouldDrawThisPlayer() )
+	// if local player is spectating this player in first person mode, don't draw it
+	C_BasePlayer * player = C_BasePlayer::GetLocalPlayer();
+
+	if ( player && player->IsObserver() )
 	{
-		return 0;
+		if ( player->GetObserverMode() == OBS_MODE_IN_EYE &&
+			 player->GetObserverTarget() == this )
+			return 0;
 	}
-#endif
+
 	return BaseClass::DrawModel( flags );
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -1469,38 +1517,27 @@ void C_BasePlayer::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 	else if ( IsLocalPlayer() )
 	{
 		engine->GetViewAngles( viewangles );
+		// BG2 - VisualMelon - Porting - Not in 2007 code base
+		// BG2 - VisualMelon - Porting - START
 		if ( UseVR() )
 		{
 			// Don't let people play with the pitch - they drive it into the ground or into the air and 
 			// it's distracting at best, nauseating at worst (e.g. when it clips through the ground plane).
 			viewangles[PITCH] = 20.0f;
 		}
+		// BG2 - VisualMelon - Porting - END
 	}
 	else
 	{
 		viewangles = EyeAngles();
 	}
 
-	//=============================================================================
-	// HPE_BEGIN:
-	// [Forrest] Fix for (at least one potential case of) CSB-194.  Spectating someone
-	// who is headshotted by a teammate and then switching to chase cam leaves
-	// you with a permanent roll to the camera that doesn't decay and is not reset
-	// even when switching to different players or at the start of the next round
-	// if you are still a spectator.  (If you spawn as a player, the view is reset.
-	// if you switch spectator modes, the view is reset.)
-	//=============================================================================
-#ifdef CSTRIKE_DLL
-	// The chase camera adopts the yaw and pitch of the previous camera, but the camera
-	// should not roll.
-	viewangles.z = 0;
-#endif
-	//=============================================================================
-	// HPE_END
-	//=============================================================================
+// BG2 - VisualMelon - Porting - Deleted stuff marked CStrike
 
-	m_flObserverChaseDistance += gpGlobals->frametime*48.0f;
+	m_flObserverChaseDistance += gpGlobals->frametime*48.0f; 
 
+	// BG2 - VisualMelon - Porting - kept this from 2013, looks like better code (Additional)
+	// BG2 - VisualMelon - Porting - START
 	float flMinDistance = CHASE_CAM_DISTANCE_MIN;
 	float flMaxDistance = CHASE_CAM_DISTANCE_MAX;
 	
@@ -1530,7 +1567,8 @@ void C_BasePlayer::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 	}
 
 	m_flObserverChaseDistance = clamp( m_flObserverChaseDistance, flMinDistance, flMaxDistance );
-	
+	// BG2 - VisualMelon - Porting - END
+
 	AngleVectors( viewangles, &forward );
 
 	VectorNormalize( forward );
@@ -1732,11 +1770,13 @@ void C_BasePlayer::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 	engine->SetViewAngles( eyeAngles );
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK
+// BG2 - VisualMelon - Porting - START
 float C_BasePlayer::GetDeathCamInterpolationTime()
 {
 	return DEATH_ANIMATION_TIME;
 }
-
+// BG2 - VisualMelon - Porting - END
 
 void C_BasePlayer::CalcDeathCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
 {
@@ -1835,6 +1875,8 @@ void C_BasePlayer::ThirdPersonSwitch( bool bThirdperson )
 	// We've switch from first to third, or vice versa.
 	UpdateVisibility();
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - no errors, can't be too bad
+	// BG2 - VisualMelon - Porting - START
 	// Update the visibility of anything bone attached to us.
 	if ( IsLocalPlayer() )
 	{
@@ -1855,6 +1897,7 @@ void C_BasePlayer::ThirdPersonSwitch( bool bThirdperson )
 			}
 		}
 	}
+	// BG2 - VisualMelon - Porting - END
 }
 
 
@@ -1862,6 +1905,8 @@ void C_BasePlayer::ThirdPersonSwitch( bool bThirdperson )
 // Purpose: single place to decide whether the camera is in the first-person position
 //          NOTE - ShouldDrawLocalPlayer() can be true even if the camera is in the first-person position, e.g. in VR.
 //-----------------------------------------------------------------------------
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 /*static*/ bool C_BasePlayer::LocalPlayerInFirstPersonView()
 {
 	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
@@ -1878,12 +1923,14 @@ void C_BasePlayer::ThirdPersonSwitch( bool bThirdperson )
 	// Not looking at the local player, e.g. in a replay in third person mode or freelook.
 	return false;
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: single place to decide whether the local player should draw
 //-----------------------------------------------------------------------------
 /*static*/ bool C_BasePlayer::ShouldDrawLocalPlayer()
 {
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - VR stuff is OK
 	if ( !UseVR() )
 	{
 		return !LocalPlayerInFirstPersonView() || cl_first_person_uses_world_model.GetBool();
@@ -1894,7 +1941,8 @@ void C_BasePlayer::ThirdPersonSwitch( bool bThirdperson )
 }
 
 
-
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 //-----------------------------------------------------------------------------
 // Purpose: single place to decide whether the camera is in the first-person position
 //          NOTE - ShouldDrawLocalPlayer() can be true even if the camera is in the first-person position, e.g. in VR.
@@ -1942,8 +1990,7 @@ bool C_BasePlayer::ShouldDrawThisPlayer()
 	}
 	return false;
 }
-
-
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -2009,11 +2056,24 @@ void C_BasePlayer::PreThink( void )
 
 void C_BasePlayer::PostThink( void )
 {
+	// BG2 - VisualMelon - Porting - Not in 2013 code base - questionable
+	// BG2 - VisualMelon - Porting - START
+	if (IsLocalPlayer() && !IsAlive())
+	{
+		//Toggle sights off when the player is dead (unstick).
+		//This prevents the sights from being re-engaged when the player
+		//respawns after having died when zoomed using the toggle.
+		KeyUp( &in_zoom, NULL );
+	}
+	// BG2 - VisualMelon - Porting - END
+
 #if !defined( NO_ENTITY_PREDICTION )
 	MDLCACHE_CRITICAL_SECTION();
 
 	if ( IsAlive())
 	{
+		// BG2 - VisualMelon - Porting - Not in 2007 code base
+		// BG2 - VisualMelon - Porting - START
 		// Need to do this on the client to avoid prediction errors
 		if ( GetFlags() & FL_DUCKING )
 		{
@@ -2023,9 +2083,10 @@ void C_BasePlayer::PostThink( void )
 		{
 			SetCollisionBounds( VEC_HULL_MIN, VEC_HULL_MAX );
 		}
+		// BG2 - VisualMelon - Porting - END
 		
 		if ( !CommentaryModeShouldSwallowInput( this ) )
-		{
+		{ // BG2 - VisualMelon - Porting - If statement commented out in 2007 code base
 			// do weapon stuff
 			ItemPostFrame();
 		}
@@ -2078,7 +2139,7 @@ void C_BasePlayer::GetToolRecordingState( KeyValues *msg )
 	// then this code can (should!) be removed
 	if ( state.m_bThirdPerson )
 	{
-		Vector cam_ofs = g_ThirdPersonManager.GetCameraOffsetAngles();
+		Vector cam_ofs = g_ThirdPersonManager.GetCameraOffsetAngles(); // BG2 - VisualMelon - Porting - Not in 2007 code base - this is a bit scary, needs thinking through
 		
 		QAngle camAngles;
 		camAngles[ PITCH ] = cam_ofs[ PITCH ];
@@ -2121,10 +2182,13 @@ void C_BasePlayer::Simulate()
 	}
 
 	BaseClass::Simulate();
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - looks pretty harmless
+	// BG2 - VisualMelon - Porting - START
 	if ( IsNoInterpolationFrame() || Teleported() )
 	{
 		ResetLatched();
 	}
+	// BG2 - VisualMelon - Porting - END
 }
 
 //-----------------------------------------------------------------------------
@@ -2133,7 +2197,7 @@ void C_BasePlayer::Simulate()
 //		Consider using GetRenderedWeaponModel() instead - it will get the
 //		viewmodel or the active weapon as appropriate.
 //-----------------------------------------------------------------------------
-C_BaseViewModel *C_BasePlayer::GetViewModel( int index /*= 0*/, bool bObserverOK )
+C_BaseViewModel *C_BasePlayer::GetViewModel( int index /*= 0*/, bool bObserverOK ) // BG2 - VisualMelon - Porting - slightly different signature from 2007 (looks backward compatable)
 {
 	Assert( index >= 0 && index < MAX_VIEWMODELS );
 
@@ -2319,9 +2383,11 @@ void C_BasePlayer::PhysicsSimulate( void )
 
 const QAngle& C_BasePlayer::GetPunchAngle()
 {
-	return m_Local.m_vecPunchAngle.Get();
+	//BG2 - Tjoppen - non-networked punchangle
+	//return m_Local.m_vecPunchAngle.Get();
+	return m_Local.m_vecPunchAngle;
+	//
 }
-
 
 void C_BasePlayer::SetPunchAngle( const QAngle &angle )
 {
@@ -2365,6 +2431,8 @@ bool C_BasePlayer::IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredC
 //-----------------------------------------------------------------------------
 float C_BasePlayer::GetFOV( void )
 {
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK
+	// BG2 - VisualMelon - Porting - START
 	// Allow users to override the FOV during demo playback
 	bool bUseDemoOverrideFov = engine->IsPlayingDemo() && demo_fov_override.GetFloat() > 0.0f;
 #if defined( REPLAY_ENABLED )
@@ -2374,6 +2442,7 @@ float C_BasePlayer::GetFOV( void )
 	{
 		return clamp( demo_fov_override.GetFloat(), 10.0f, 90.0f );
 	}
+	// BG2 - VisualMelon - Porting - END
 
 	if ( GetObserverMode() == OBS_MODE_IN_EYE )
 	{
@@ -2499,6 +2568,8 @@ void RecvProxy_ObserverTarget( const CRecvProxyData *pData, void *pStruct, void 
 	pPlayer->SetObserverTarget( hTarget );
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK
+// BG2 - VisualMelon - Porting - START
 void RecvProxy_ObserverMode( const CRecvProxyData *pData, void *pStruct, void *pOut )
 {
 	C_BasePlayer *pPlayer = (C_BasePlayer *) pStruct;
@@ -2507,6 +2578,7 @@ void RecvProxy_ObserverMode( const CRecvProxyData *pData, void *pStruct, void *p
 
 	pPlayer->SetObserverMode ( pData->m_Value.m_Int );
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: Remove this player from a vehicle
@@ -2796,6 +2868,8 @@ void C_BasePlayer::UpdateFogBlend( void )
 	}
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -2825,23 +2899,7 @@ bool C_BasePlayer::GetSteamID( CSteamID *pID )
 	return false;
 }
 
-#if defined USES_ECON_ITEMS
-//-----------------------------------------------------------------------------
-// Purpose: Update the visibility of our worn items.
-//-----------------------------------------------------------------------------
-void C_BasePlayer::UpdateWearables( void )
-{
-	for ( int i=0; i<m_hMyWearables.Count(); ++i )
-	{
-		CEconWearable* pItem = m_hMyWearables[i];
-		if ( pItem )
-		{
-			pItem->ValidateModelIndex();
-			pItem->UpdateVisibility();
-		}
-	}
-}
-#endif // USES_ECON_ITEMS
+// BG2 - VisualMelon - Porting - Deleted ECON
 
 
 //-----------------------------------------------------------------------------
@@ -2960,8 +3018,7 @@ void C_BasePlayer::BuildFirstPersonMeathookTransformations( CStudioHdr *hdr, Vec
 		MatrixScaleByZero( transformhelmet );
 	}
 }
-
-
+// BG2 - VisualMelon - Porting - END
 
 void CC_DumpClientSoundscapeData( const CCommand& args )
 {
@@ -3000,3 +3057,11 @@ void CC_DumpClientSoundscapeData( const CCommand& args )
 	Msg("End dump.\n");
 }
 static ConCommand soundscape_dumpclient("soundscape_dumpclient", CC_DumpClientSoundscapeData, "Dumps the client's soundscape data.\n", FCVAR_CHEAT);
+
+
+//BG2 - Tjoppen - health fix
+int C_BasePlayer::GetHealth() const
+{
+	return g_PR->GetHealth(entindex());
+}
+//

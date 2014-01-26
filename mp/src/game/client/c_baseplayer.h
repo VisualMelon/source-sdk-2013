@@ -5,7 +5,7 @@
 //			- Manages the player's flashlight effect.
 //
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 03:49 24/01/2014
 #ifndef C_BASEPLAYER_H
 #define C_BASEPLAYER_H
 #ifdef _WIN32
@@ -23,20 +23,16 @@
 #include "hintsystem.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 #include "c_env_fog_controller.h"
-#include "igameevents.h"
-#include "GameEventListener.h"
+#include "igameevents.h" // BG2 - VisualMelon - Porting - Not in 2007 code base - left for now
+#include "GameEventListener.h" // BG2 - VisualMelon - Porting - Not in 2007 code base - left for now
 
-#if defined USES_ECON_ITEMS
-#include "econ_item.h"
-#include "game_item_schema.h"
-#include "econ_item_view.h"
-#endif
+// BG2 - VisualMelon - Porting - Deleted some ECONS stuff
 
 class C_BaseCombatWeapon;
 class C_BaseViewModel;
 class C_FuncLadder;
 class CFlashlightEffect;
-class C_EconWearable;
+// BG2 - VisualMelon - Porting - Deleted some ECONS stuff
 
 extern int g_nKillCamMode;
 extern int g_nKillCamTarget1;
@@ -60,7 +56,7 @@ public:
 
 #define CHASE_CAM_DISTANCE_MIN	16.0f
 #define CHASE_CAM_DISTANCE_MAX	96.0f
-#define WALL_OFFSET				6.0f
+#define WALL_OFFSET				6.0f // BG2 - VisualMelon - Porting - Not in 2007 code base - left for good measure
 
 
 bool IsInFreezeCam( void );
@@ -81,7 +77,7 @@ public:
 
 	virtual void	Spawn( void );
 	virtual void	SharedSpawn(); // Shared between client and server.
-	virtual bool	GetSteamID( CSteamID *pID );
+	virtual bool	GetSteamID( CSteamID *pID ); // BG2 - VisualMelon - Porting - Not in 2007 code base - this is probably important or something
 
 	// IClientEntity overrides.
 	virtual void	OnPreDataChanged( DataUpdateType_t updateType );
@@ -100,7 +96,7 @@ public:
 
 	virtual void	GetToolRecordingState( KeyValues *msg );
 
-	virtual float GetPlayerMaxSpeed();
+	virtual float GetPlayerMaxSpeed(); // BG2 - VisualMelon - Porting - Not in 2007 code base - left in for now
 
 	void	SetAnimationExtension( const char *pExtension );
 
@@ -136,17 +132,20 @@ public:
 	virtual void	PlayerUse( void );
 	CBaseEntity		*FindUseEntity( void );
 	virtual bool	IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps );
-
+	
 	// Data handlers
 	virtual bool	IsPlayer( void ) const { return true; }
-	virtual int		GetHealth() const { return m_iHealth; }
+	//BG2 - Tjoppen - health fix
+	//virtual int		GetHealth() const { return m_iHealth; };
+	virtual int             GetHealth() const;
+	//
 
 	int		GetBonusProgress() const { return m_iBonusProgress; }
 	int		GetBonusChallenge() const { return m_iBonusChallenge; }
 
 	// observer mode
 	virtual int			GetObserverMode() const;
-	void				SetObserverMode ( int iNewMode );
+	void				SetObserverMode ( int iNewMode ); // BG2 - VisualMelon - Porting - Not in 2007 code base - looks inocent enough
 	virtual CBaseEntity	*GetObserverTarget() const;
 	void			SetObserverTarget( EHANDLE hObserverTarget );
 
@@ -154,7 +153,7 @@ public:
 
 	bool IsObserver() const;
 	bool IsHLTV() const;
-	bool IsReplay() const;
+	bool IsReplay() const; // BG2 - VisualMelon - Porting - Not in 2007 code base - left for now
 	void ResetObserverMode();
 	bool IsBot( void ) const { return false; }
 
@@ -176,7 +175,7 @@ public:
 	void			CacheVehicleView( void );	// Calculate and cache the position of the player in the vehicle
 
 
-	bool			IsSuitEquipped( void ) { return m_Local.m_bWearingSuit; };
+	bool			IsSuitEquipped( void ) { return m_Local.m_bWearingSuit; }; // BG2 - VisualMelon - Porting - Not in 2007 code base - looks innocent enough
 
 	// Team handlers
 	virtual void	TeamChange( int iNewTeam );
@@ -214,12 +213,15 @@ public:
 	bool						IsLocalPlayer( void ) const;
 
 	// Global/static methods
-	virtual void				ThirdPersonSwitch( bool bThirdperson );
-	static bool					LocalPlayerInFirstPersonView();
+	virtual void				ThirdPersonSwitch( bool bThirdperson ); // BG2 - VisualMelon - Porting - didn't used to be virtual
+	static bool					LocalPlayerInFirstPersonView(); // BG2 - VisualMelon - Porting - Not in 2007 code base
 	static bool					ShouldDrawLocalPlayer();
 	static C_BasePlayer			*GetLocalPlayer( void );
 	int							GetUserID( void );
 	virtual bool				CanSetSoundMixer( void );
+
+	// BG2 - VisualMelon - Porting - Not in 2007 code base
+	// BG2 - VisualMelon - Porting - START
 	virtual int					GetVisionFilterFlags( bool bWeaponsCheck = false ) { return 0x00; }
 	bool						HasVisionFilterFlags( int nFlags, bool bWeaponsCheck = false ) { return ( GetVisionFilterFlags( bWeaponsCheck ) & nFlags ) == nFlags; }
 	virtual void				CalculateVisionUsingCurrentFlags( void ) {}
@@ -228,10 +230,11 @@ public:
 	// Specific queries about this player.
 	bool						InFirstPersonView();
 	bool						ShouldDrawThisPlayer();
+	// BG2 - VisualMelon - Porting - END
 
 	// Called by the view model if its rendering is being overridden.
 	virtual bool				ViewModel_IsTransparent( void );
-	virtual bool				ViewModel_IsUsingFBTexture( void );
+	virtual bool				ViewModel_IsUsingFBTexture( void ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 #if !defined( NO_ENTITY_PREDICTION )
 	void						AddToPlayerSimulationList( C_BaseEntity *other );
@@ -306,7 +309,7 @@ public:
 	virtual void	SetVehicleRole( int nRole );
 	void					LeaveVehicle( void );
 
-	bool					UsingStandardWeaponsInVehicle( void );
+	//bool					UsingStandardWeaponsInVehicle( void ); //BG2 - Vehicles Removed. -HairyPotter
 
 	virtual void			SetAnimation( PLAYER_ANIM playerAnim );
 
@@ -344,11 +347,11 @@ public:
 	virtual void UpdateStepSound( surfacedata_t *psurface, const Vector &vecOrigin, const Vector &vecVelocity  );
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
 	virtual surfacedata_t * GetFootstepSurface( const Vector &origin, const char *surfaceName );
-	virtual void GetStepSoundVelocities( float *velwalk, float *velrun );
+	virtual void GetStepSoundVelocities( float *velwalk, float *velrun, float *flduck ); // BG2 - VisualMelon - Porting - 2007 adds *flduck param
 	virtual void SetStepSoundTime( stepsoundtimes_t iStepSoundTime, bool bWalking );
-	virtual const char *GetOverrideStepSound( const char *pszBaseStepSoundName ) { return pszBaseStepSoundName; }
+	//virtual const char *GetOverrideStepSound( const char *pszBaseStepSoundName ) { return pszBaseStepSoundName; } // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
-	virtual void OnEmitFootstepSound( const CSoundParameters& params, const Vector& vecOrigin, float fVolume ) {}
+	//virtual void OnEmitFootstepSound( const CSoundParameters& params, const Vector& vecOrigin, float fVolume ) {} // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 	// Called by prediction when it detects a prediction correction.
 	// vDelta is the line from where the client had predicted the player to at the usercmd in question,
@@ -379,8 +382,14 @@ public:
 	void					UpdateFogController( void );
 	void					UpdateFogBlend( void );
 
+	void					IncrementEFNoInterpParity(); // BG2 - VisualMelon - Porting - not in 2013 code base
+	int						GetEFNoInterpParity() const; // BG2 - VisualMelon - Porting - not in 2013 code base
+
 	float					GetFOVTime( void ){ return m_flFOVTime; }
 
+	// BG2 - VisualMelon - Porting - not in 2013 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	virtual void			OnAchievementAchieved( int iAchievement ) {}
 	
 	bool					ShouldAnnounceAchievement( void ){ return m_flNextAchievementAnnounceTime < gpGlobals->curtime; }
@@ -397,7 +406,9 @@ public:
 	void					SetFiredWeapon( bool bFlag ) { m_bFiredWeapon = bFlag; }
 
 	virtual bool			CanUseFirstPersonCommand( void ){ return true; }
-	
+	*/
+	// BG2 - VisualMelon - Porting - END
+
 protected:
 	fogparams_t				m_CurrentFog;
 	EHANDLE					m_hOldFogController;
@@ -408,9 +419,7 @@ public:
 	// Data for only the local player
 	CNetworkVarEmbedded( CPlayerLocalData, m_Local );
 
-#if defined USES_ECON_ITEMS
-	CNetworkVarEmbedded( CAttributeList, m_AttributeList );
-#endif
+	// BG2 - VisualMelon - Porting - Deleted ECON stuff
 
 	// Data common to all other players, too
 	CPlayerState			pl;
@@ -443,6 +452,11 @@ public:
 	float			m_flConstraintWidth;
 	float			m_flConstraintSpeedFactor;
 
+	//BG2 - Tjoppen - GetClientIndex()
+	// Get the client index (entindex-1).
+	int						GetClientIndex()	{ return entindex() - 1; }
+	//
+
 protected:
 
 	void				CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
@@ -453,7 +467,7 @@ protected:
 	void				CalcChaseCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
 	virtual void		CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
 
-	virtual float		GetDeathCamInterpolationTime();
+	virtual float		GetDeathCamInterpolationTime(); // BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK
 
 	virtual void		CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
 	void				CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
@@ -469,7 +483,7 @@ protected:
 	// used by client side player footsteps 
 	surfacedata_t* GetGroundSurface();
 
-	virtual void	FireGameEvent( IGameEvent *event );
+	virtual void	FireGameEvent( IGameEvent *event ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 protected:
 	// Did we just enter a vehicle this frame?
@@ -486,7 +500,7 @@ protected:
 	float			m_flDeathTime;		// last time player died
 
 	float			m_flStepSoundTime;
-	bool			m_IsFootprintOnLeft;
+	bool			m_IsFootprintOnLeft; // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 private:
 	// Make sure no one calls this...
@@ -499,6 +513,12 @@ private:
 	EHANDLE			m_hUseEntity;
 	
 	float			m_flMaxspeed;
+	//BG2 - Tjoppen - health fix
+	//int				m_iHealth;
+	//
+	//BG2 - Tjoppen - footstep fix
+	float			m_flTimeStepSound;
+
 
 	int				m_iBonusProgress;
 	int				m_iBonusChallenge;
@@ -523,7 +543,7 @@ private:
 
 	EHANDLE			m_pCurrentVguiScreen;
 
-	bool			m_bFiredWeapon;
+	bool			m_bFiredWeapon; // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 
 	// Player flashlight dynamic light pointers
@@ -607,15 +627,14 @@ protected:
 
 	bool			m_bSentFreezeFrame;
 	float			m_flFreezeZOffset;
+	byte			m_ubEFNoInterpParity; // BG2 - VisualMelon - these 2 are not in 2013 code base
+	byte			m_ubOldEFNoInterpParity;
 
-	float			m_flNextAchievementAnnounceTime;
+	//float			m_flNextAchievementAnnounceTime; // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	int				m_nForceVisionFilterFlags; // Force our vision filter to a specific setting
 
-#if defined USES_ECON_ITEMS
-	// Wearables
-	CUtlVector<CHandle<C_EconWearable > >	m_hMyWearables;
-#endif
+// BG2 - VisualMelon - Porting - Delete from ECONs
 
 private:
 

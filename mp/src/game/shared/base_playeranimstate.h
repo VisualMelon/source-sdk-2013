@@ -3,7 +3,7 @@
 // Purpose: 
 //
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 13:44 26/01/2014 - no changes
 #ifndef BASE_PLAYERANIMSTATE_H
 #define BASE_PLAYERANIMSTATE_H
 #ifdef _WIN32

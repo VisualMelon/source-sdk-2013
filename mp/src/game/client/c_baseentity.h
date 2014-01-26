@@ -8,7 +8,7 @@
 //
 // $NoKeywords: $
 //===========================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 13:39 26/01/2014
 #ifndef C_BASEENTITY_H
 #define C_BASEENTITY_H
 #ifdef _WIN32
@@ -18,7 +18,7 @@
 #include "mathlib/vector.h"
 #include "icliententityinternal.h"
 #include "engine/ivmodelinfo.h"
-#include "engine/ivmodelrender.h"
+#include "engine/ivmodelrender.h" // BG2 - VisualMelon - Porting - Not in 2007 code base
 #include "client_class.h"
 #include "iclientshadowmgr.h"
 #include "ehandle.h"
@@ -57,7 +57,7 @@ class CTakeDamageInfo;
 class C_BaseCombatCharacter;
 class CEntityMapData;
 class ConVar;
-class CDmgAccumulator;
+//class CDmgAccumulator; // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 
 struct CSoundParameters;
 
@@ -191,14 +191,14 @@ public:
 	
 	// FireBullets uses shared code for prediction.
 	virtual void					FireBullets( const FireBulletsInfo_t &info );
-	virtual void					ModifyFireBulletsDamage( CTakeDamageInfo* dmgInfo ) {}
+	virtual void					ModifyFireBulletsDamage( CTakeDamageInfo* dmgInfo ) {} // BG2 - VisualMelon - Porting - Not in 2007 code base
 	virtual bool					ShouldDrawUnderwaterBulletBubbles();
 	virtual bool					ShouldDrawWaterImpacts( void ) { return true; }
 	virtual bool					HandleShotImpactingWater( const FireBulletsInfo_t &info, 
 		const Vector &vecEnd, ITraceFilter *pTraceFilter, Vector *pVecTracerDest );
 	virtual ITraceFilter*			GetBeamTraceFilter( void );
-	virtual void					DispatchTraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, trace_t *ptr, CDmgAccumulator *pAccumulator = NULL );
-	virtual void					TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, trace_t *ptr, CDmgAccumulator *pAccumulator = NULL );
+	virtual void					DispatchTraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, trace_t *ptr /*, CDmgAccumulator *pAccumulator = NULL*/ ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	virtual void					TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, trace_t *ptr /*, CDmgAccumulator *pAccumulator = NULL*/ ); // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 	virtual void					DoImpactEffect( trace_t &tr, int nDamageType );
 	virtual void					MakeTracer( const Vector &vecTracerSrc, const trace_t &tr, int iTracerType );
 	virtual int						GetTracerAttachment( void );
@@ -297,7 +297,7 @@ public:
 	virtual bool					IsTwoPass( void );
 	virtual bool					UsesPowerOfTwoFrameBufferTexture();
 	virtual bool					UsesFullFrameBufferTexture();
-	virtual bool					IgnoresZBuffer( void ) const;
+	virtual bool					IgnoresZBuffer( void ) const; // BG2 - VisualMelon - Porting - Not in 2007 code base - looks like fun
 	virtual const model_t			*GetModel( void ) const;
 	virtual int						DrawModel( int flags );
 	virtual void					ComputeFxBlend( void );
@@ -485,7 +485,7 @@ public:
 
 	int								GetModelIndex( void ) const;
 	void							SetModelIndex( int index );
-	virtual int						CalcOverrideModelIndex() { return -1; }
+	virtual int						CalcOverrideModelIndex() { return -1; } // BG2 - VisualMelon - Porting - Not in 2007 code base - looks harmless enough
 
 	// These methods return a *world-aligned* box relative to the absorigin of the entity.
 	// This is used for collision purposes and is *not* guaranteed
@@ -581,7 +581,7 @@ public:
 	virtual const char				*GetIDString( void ) { return ""; };
 
 	// See CSoundEmitterSystem
-	virtual void ModifyEmitSoundParams( EmitSound_t &params );
+	virtual void ModifyEmitSoundParams( EmitSound_t &params ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	void	EmitSound( const char *soundname, float soundtime = 0.0f, float *duration = NULL );  // Override for doing the general case of CPASAttenuationFilter( this ), and EmitSound( filter, entindex(), etc. );
 	void	EmitSound( const char *soundname, HSOUNDSCRIPTHANDLE& handle, float soundtime = 0.0f, float *duration = NULL );  // Override for doing the general case of CPASAttenuationFilter( this ), and EmitSound( filter, entindex(), etc. );
@@ -772,7 +772,7 @@ public:
 										const Vector& decalCenter, int hitbox, int decalIndex, bool doTrace, trace_t& tr, int maxLODToDecal = ADDDECAL_TO_ALL_LODS );
 
 	virtual void					AddColoredDecal( const Vector& rayStart, const Vector& rayEnd,
-		const Vector& decalCenter, int hitbox, int decalIndex, bool doTrace, trace_t& tr, Color cColor, int maxLODToDecal = ADDDECAL_TO_ALL_LODS );
+		const Vector& decalCenter, int hitbox, int decalIndex, bool doTrace, trace_t& tr, Color cColor, int maxLODToDecal = ADDDECAL_TO_ALL_LODS ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	// A method to remove all decals from an entity
 	void							RemoveAllDecals( void );
@@ -996,7 +996,7 @@ public:
 
 	bool							IsInWorld( void ) { return true; }
 
-	bool							IsWorld() { return entindex() == 0; }
+	bool							IsWorld() { return entindex() == 0; } // BG2 - VisualMelon - Porting - Not in 2007 code base - nicley self-contained, let it play
 	/////////////////
 
 	virtual bool					IsPlayer( void ) const { return false; };
@@ -1004,14 +1004,19 @@ public:
 	virtual C_BaseCombatCharacter	*MyCombatCharacterPointer( void ) { return NULL; }
 	virtual bool					IsNPC( void ) { return false; }
 	C_AI_BaseNPC					*MyNPCPointer( void ); 
-	virtual bool					IsNextBot() { return false; }
+	virtual bool					IsNextBot() { return false; } // BG2 - VisualMelon - Porting - Not in 2007 code base - been commenting "next bot" stuff, but this looks ok
 	// TF2 specific
 	virtual bool					IsBaseObject( void ) const { return false; }
+	// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+	// BG2 - VisualMelon - Porting - START
+	/*
 	virtual bool					IsBaseCombatWeapon( void ) const { return false; }
 	virtual class C_BaseCombatWeapon		*MyCombatWeaponPointer() { return NULL; }
 	virtual bool					IsCombatItem( void ) const { return false; }
 
 	virtual bool					IsBaseTrain( void ) const { return false; }
+	*/
+	// BG2 - VisualMelon - Porting - END
 
 	// Returns the eye point + angles (used for viewing + shooting)
 	virtual Vector			EyePosition( void );
@@ -1075,6 +1080,8 @@ public:
 	virtual const Vector &GetViewOffset() const;
 	virtual void		  SetViewOffset( const Vector& v );
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base
+	// BG2 - VisualMelon - Porting - START
 #ifdef SIXENSE
 	const Vector&		GetEyeOffset() const;
 	void				SetEyeOffset( const Vector& v );
@@ -1082,6 +1089,7 @@ public:
 	const QAngle &		GetEyeAngleOffset() const;
 	void				SetEyeAngleOffset( const QAngle & qa );
 #endif
+	// BG2 - VisualMelon - Porting - END
 
 	// Invalidates the abs state of all children
 	void InvalidatePhysicsRecursive( int nChangeFlags );
@@ -1143,8 +1151,8 @@ public:
 	float	GetSimulationTime() const;
 	void	SetSimulationTime( float st );
 
-	float	GetCreateTime()										{ return m_flCreateTime; }
-	void	SetCreateTime( float flCreateTime )					{ m_flCreateTime = flCreateTime; }
+	float	GetCreateTime()										{ return m_flCreateTime; } // BG2 - VisualMelon - Porting - Not in 2007 code base
+	void	SetCreateTime( float flCreateTime )					{ m_flCreateTime = flCreateTime; } // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	int		GetCreationTick() const;
 
@@ -1288,10 +1296,10 @@ public:
 	float							m_flSimulationTime;
 	float							m_flOldSimulationTime;
 	
-	float							m_flCreateTime;
-
-	byte							m_ubInterpolationFrame;
-	byte							m_ubOldInterpolationFrame;
+	float							m_flCreateTime; // BG2 - VisualMelon - Porting - Not in 2007 code base - can't do much harm
+	
+	byte							m_ubInterpolationFrame; // BG2 - VisualMelon - Porting - Not in 2007 code base - no idea what this is
+	byte							m_ubOldInterpolationFrame; // BG2 - VisualMelon - Porting - Not in 2007 code base - no idea what this is
 
 private:
 	// Effects to apply
@@ -1311,7 +1319,7 @@ public:
 	static bool						IsInterpolationEnabled();
 
 	// Should we interpolate this tick?  (Used to be EF_NOINTERP)
-	bool							IsNoInterpolationFrame();
+	bool							IsNoInterpolationFrame(); // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	// 
 	int								m_nNextThinkTick;
@@ -1320,9 +1328,7 @@ public:
 	// Object model index
 	short							m_nModelIndex;
 
-#ifdef TF_CLIENT_DLL
-	int								m_nModelIndexOverrides[MAX_VISION_MODES];
-#endif
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF
 
 	char							m_takedamage;
 	char							m_lifeState;
@@ -1378,7 +1384,7 @@ public:
 	// used by SourceTV since move-parents may be missing when child spawns.
 	void							HierarchyUpdateMoveParent();
 
-	virtual bool					IsDeflectable() { return false; }
+	virtual bool					IsDeflectable() { return false; } // BG2 - VisualMelon - Porting - Not in 2007 code base - I like these one-line functions
 
 protected:
 	int								m_nFXComputeFrame;
@@ -1416,10 +1422,14 @@ protected:
 	// Object eye position
 	Vector							m_vecViewOffset;
 
+	// BG2 - VisualMelon - Porting - Not in 2007 code base
+	// BG2 - VisualMelon - Porting - START
 #if defined(SIXENSE)
 	Vector							m_vecEyeOffset;
 	QAngle							m_EyeAngleOffset;    
 #endif
+	// BG2 - VisualMelon - Porting - END
+
 	// Allow studio models to tell us what their m_nBody value is
 	virtual int						GetStudioBody( void ) { return 0; }
 
@@ -1429,7 +1439,7 @@ public:
 	bool InitializeAsClientEntityByIndex( int iIndex, RenderGroup_t renderGroup );
 
 private:
-	friend void OnRenderStart();
+	friend void OnRenderStart(); // BG2 - VisualMelon - Porting - Not in 2007 code base - moved from public to private in 2013
 
 	// Figure out the smoothly interpolated origin for all server entities. Happens right before
 	// letting all entities simulate.
@@ -1468,7 +1478,7 @@ private:
 
 	// methods related to decal adding
 	void AddStudioDecal( const Ray_t& ray, int hitbox, int decalIndex, bool doTrace, trace_t& tr, int maxLODToDecal = ADDDECAL_TO_ALL_LODS );
-	void AddColoredStudioDecal( const Ray_t& ray, int hitbox, int decalIndex, bool doTrace, trace_t& tr, Color cColor, int maxLODToDecal );
+	void AddColoredStudioDecal( const Ray_t& ray, int hitbox, int decalIndex, bool doTrace, trace_t& tr, Color cColor, int maxLODToDecal ); // BG2 - VisualMelon - Porting - Not in 2007 code base
 	void AddBrushModelDecal( const Ray_t& ray, const Vector& decalCenter, int decalIndex, bool doTrace, trace_t& tr );
 
 	void ComputePackedOffsets( void );
@@ -1497,7 +1507,7 @@ private:
 
 	// Object velocity
 	Vector							m_vecVelocity;
-	CInterpolatedVar< Vector >		m_iv_vecVelocity;
+	CInterpolatedVar< Vector >		m_iv_vecVelocity; // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 	Vector							m_vecAbsVelocity;
 
@@ -1674,19 +1684,7 @@ protected:
 	CThreadFastMutex m_CalcAbsolutePositionMutex;
 	CThreadFastMutex m_CalcAbsoluteVelocityMutex;
 
-#ifdef TF_CLIENT_DLL
-	// TF prevents drawing of any entity attached to players that aren't items in the inventory of the player.
-	// This is to prevent servers creating fake cosmetic items and attaching them to players.
-public:
-	virtual bool ValidateEntityAttachedToPlayer( bool &bShouldRetry );
-	bool EntityDeemedInvalid( void ) { return (m_bValidatedOwner && m_bDeemedInvalid); }
-protected:
-	bool m_bValidatedOwner;
-	bool m_bDeemedInvalid;
-	bool m_bWasDeemedInvalid;
-	RenderMode_t m_PreviousRenderMode;
-	color32 m_PreviousRenderColor;
-#endif
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF
 };
 
 EXTERN_RECV_TABLE(DT_BaseEntity);
@@ -1763,6 +1761,8 @@ inline const matrix3x4_t &C_BaseEntity::EntityToWorldTransform() const
 	return m_rgflCoordinateFrame; 
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - just "inline" getters
+// BG2 - VisualMelon - Porting - START
 inline const Vector& C_BaseEntity::GetNetworkOrigin() const
 {
 	return m_vecNetworkOrigin;
@@ -1782,6 +1782,7 @@ inline int C_BaseEntity::GetModelIndex( void ) const
 {
 	return m_nModelIndex;
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Some helper methods that transform a point from entity space to world space + back
@@ -2064,6 +2065,19 @@ inline unsigned char CBaseEntity::GetParentAttachment() const
 	return m_iParentAttachment;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2013 copy - errr?
+// BG2 - VisualMelon - Porting - START?
+inline const Vector& CBaseEntity::GetViewOffset() const 
+{ 
+	return m_vecViewOffset; 
+}
+
+inline void CBaseEntity::SetViewOffset( const Vector& v ) 
+{ 
+	m_vecViewOffset = v; 
+}
+// BG2 - VisualMelon - Porting - END
+
 inline ClientRenderHandle_t CBaseEntity::GetRenderHandle() const 
 { 
 	return m_hRender; 
@@ -2074,6 +2088,8 @@ inline ClientRenderHandle_t& CBaseEntity::RenderHandle()
 	return m_hRender;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - accessors for other SIXENSE stuff
+// BG2 - VisualMelon - Porting - START
 #ifdef SIXENSE
 
 inline const Vector& CBaseEntity::GetEyeOffset() const 
@@ -2097,6 +2113,7 @@ inline void CBaseEntity::SetEyeAngleOffset( const QAngle & qa )
 }
 
 #endif
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Methods to cast away const
@@ -2134,6 +2151,8 @@ inline bool	C_BaseEntity::IsInterpolationEnabled()
 	return s_bInterpolate;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base
+// BG2 - VisualMelon - Porting - START
 //-----------------------------------------------------------------------------
 // Should we be interpolating during this frame? (was EF_NOINTERP)
 //-----------------------------------------------------------------------------
@@ -2141,6 +2160,7 @@ inline bool C_BaseEntity::IsNoInterpolationFrame()
 {
 	return m_ubOldInterpolationFrame != m_ubInterpolationFrame;
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: 

@@ -4,7 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-
+// BG2 - VisualMelon - Porting - Initial Port Completed at 15:55 25/01/2014
 #include "cbase.h"
 
 #include "decals.h"
@@ -18,7 +18,7 @@
 #include "mapentities_shared.h"
 #include "debugoverlay_shared.h"
 #include "coordsize.h"
-#include "vphysics/performance.h"
+#include "vphysics/performance.h" // BG2 - VisualMelon - Porting - Not in 2007 code base
 
 #ifdef CLIENT_DLL
 	#include "c_te_effect_dispatch.h"
@@ -34,7 +34,7 @@
 	#include "te_hl2mp_shotgun_shot.h"
 #endif
 
-	#include "gamestats.h"
+	//#include "gamestats.h"
 
 #endif
 
@@ -48,10 +48,7 @@ ConVar hl2_episodic( "hl2_episodic", "0", FCVAR_REPLICATED );
 	#include "prop_portal_shared.h"
 #endif
 
-#ifdef TF_DLL
-#include "tf_gamerules.h"
-#include "tf_weaponbase.h"
-#endif // TF_DLL
+// BG2 - VisualMelon - Porting - Deleted stuff marked TF2
 
 #include "rumble_shared.h"
 
@@ -66,6 +63,8 @@ ConVar hl2_episodic( "hl2_episodic", "0", FCVAR_REPLICATED );
 
 bool CBaseEntity::m_bAllowPrecache = false;
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks ok I think
+// BG2 - VisualMelon - Porting - START
 // Set default max values for entities based on the existing constants from elsewhere
 float k_flMaxEntityPosCoord = MAX_COORD_FLOAT;
 float k_flMaxEntityEulerAngle = 360.0 * 1000.0f; // really should be restricted to +/-180, but some code doesn't adhere to this.  let's just trap NANs, etc
@@ -74,11 +73,14 @@ float k_flMaxEntityEulerAngle = 360.0 * 1000.0f; // really should be restricted 
 // account for this.
 float k_flMaxEntitySpeed = k_flMaxVelocity * 2.0f;
 float k_flMaxEntitySpinRate = k_flMaxAngularVelocity * 10.0f;
+// BG2 - VisualMelon - Porting - END
 
 ConVar	ai_shot_bias_min( "ai_shot_bias_min", "-1.0", FCVAR_REPLICATED );
 ConVar	ai_shot_bias_max( "ai_shot_bias_max", "1.0", FCVAR_REPLICATED );
 ConVar	ai_debug_shoot_positions( "ai_debug_shoot_positions", "0", FCVAR_REPLICATED | FCVAR_CHEAT );
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - pretty self-contained
+// BG2 - VisualMelon - Porting - START
 // Utility func to throttle rate at which the "reasonable position" spew goes out
 static double s_LastEntityReasonableEmitTime;
 bool CheckEmitReasonablePhysicsSpew()
@@ -96,7 +98,7 @@ bool CheckEmitReasonablePhysicsSpew()
 	s_LastEntityReasonableEmitTime = now;
 	return true;
 }
-
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: Spawn some blood particles
@@ -150,6 +152,8 @@ Vector CBaseEntity::EarPosition( void )
 	return EyePosition(); 
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks ok
+// BG2 - VisualMelon - Porting - START
 void CBaseEntity::SetViewOffset( const Vector& v ) 
 { 
 	m_vecViewOffset = v; 
@@ -159,7 +163,7 @@ const Vector& CBaseEntity::GetViewOffset() const
 { 
 	return m_vecViewOffset; 
 }
-
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // center point of entity
@@ -218,6 +222,18 @@ void CBaseEntity::SetEffects( int nEffects )
 
 		m_fEffects = nEffects;
 
+#if !defined( CLIENT_DLL )
+		if ( nEffects & ( EF_NOINTERP ) )
+		{
+			gEntList.AddPostClientMessageEntity( this );
+		}
+#endif
+
+		if ( ( nEffects & EF_NOINTERP ) && IsPlayer() )
+		{
+			((CBasePlayer *)this)->IncrementEFNoInterpParity();
+		}
+
 #ifndef CLIENT_DLL
 		DispatchUpdateTransmitState();
 #else
@@ -241,7 +257,14 @@ void CBaseEntity::AddEffects( int nEffects )
 #endif // HL2_EPISODIC
 #endif // !CLIENT_DLL
 
-	m_fEffects |= nEffects; 
+	m_fEffects |= nEffects;
+#if !defined( CLIENT_DLL )
+	if ( nEffects & ( EF_NOINTERP ) )
+	{
+		gEntList.AddPostClientMessageEntity( this );
+	}
+#endif 
+
 
 	if ( nEffects & EF_NODRAW)
 	{
@@ -754,11 +777,14 @@ BASEPTR	CBaseEntity::ThinkSet( BASEPTR func, float thinkTime, const char *szCont
 {
 #if !defined( CLIENT_DLL )
 #ifdef _DEBUG
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks like Linux stuff
+// BG2 - VisualMelon - Porting - START
 #ifdef GNUC
 	COMPILE_TIME_ASSERT( sizeof(func) == 8 );
 #else
 	COMPILE_TIME_ASSERT( sizeof(func) == 4 );
 #endif
+// BG2 - VisualMelon - Porting - END
 #endif
 #endif
 
@@ -1100,7 +1126,8 @@ int	CBaseEntity::GetNextThinkTick( int nContextIndex ) const
 	return m_aThinkFunctions[nContextIndex].m_nNextThinkTick; 
 }
 
-
+// BG2 - VisualMelon - Porting - Not in 2007 code base - doesn't modify anything
+// BG2 - VisualMelon - Porting - START
 int CheckEntityVelocity( Vector &v )
 {
 	float r = k_flMaxEntitySpeed;
@@ -1123,6 +1150,7 @@ int CheckEntityVelocity( Vector &v )
 	// A terrible, horrible, no good, very bad velocity.
 	return -1;
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // Purpose: My physics object has been updated, react or extract data
@@ -1143,6 +1171,8 @@ void CBaseEntity::VPhysicsUpdate( IPhysicsObject *pPhysics )
 
 			pPhysics->GetPosition( &origin, &angles );
 
+			// BG2 - VisualMelon - Porting - replaces some stuff with infinite checks, looks good
+			// BG2 - VisualMelon - Porting - START
 			if ( !IsEntityQAngleReasonable( angles ) )
 			{
 				if ( CheckEmitReasonablePhysicsSpew() )
@@ -1151,17 +1181,18 @@ void CBaseEntity::VPhysicsUpdate( IPhysicsObject *pPhysics )
 				}
 				angles = vec3_angle;
 			}
+			// BG2 - VisualMelon - Porting - END
 #ifndef CLIENT_DLL 
 			Vector prevOrigin = GetAbsOrigin();
 #endif
 
-			if ( IsEntityPositionReasonable( origin ) )
+			if ( IsEntityPositionReasonable( origin ) ) // BG2 - VisualMelon - Porting - replaces a call to origin.IsValid, looks good
 			{
 				SetAbsOrigin( origin );
 			}
 			else
 			{
-				if ( CheckEmitReasonablePhysicsSpew() )
+				if ( CheckEmitReasonablePhysicsSpew() ) // BG2 - VisualMelon - Porting - If not in 2007 code base
 				{
 					Warning( "Ignoring unreasonable position (%f,%f,%f) from vphysics! (entity %s)\n", origin.x, origin.y, origin.z, GetDebugName() );
 				}
@@ -1593,6 +1624,85 @@ public:
 typedef CTraceFilterSimpleList CBulletsTraceFilter;
 #endif
 
+//BG2 - Tjoppen - arcscan bullets
+float BG2_TraceArc( const FireBulletsInfo_t &info, const Vector &vecDir, unsigned int mask, ITraceFilter *filter, trace_t *tr )
+{
+	//this function replaces CBullet so that no actual physical bullets are generated
+	//this means there's no need to create a bullet entity which sometimes sends players flying through the air
+	//it seems Source isn't made for handling objects moving near the speed of sound :)
+	//a damage modifier is returned, based on final distance and velocity
+	const float dt = 0.01;
+	const float tmax = 3;
+
+	//initial position and velocity
+	Vector pos = info.m_vecSrc;
+	Vector oldpos;
+	Vector vel = vecDir * info.m_flMuzzleVelocity;
+
+	extern	ConVar	sv_simulatedbullets_drag,
+					sv_gravity;
+
+	float z_vel_offset = 0;
+	float z_pos_offset = 0;
+
+	//do simple linear traces along the arc
+	//stop if too much "time" passes or if the shot exceeds m_flDistance
+	for( float t = 0; t < tmax && pos.DistTo(info.m_vecSrc) < info.m_flDistance; t += dt )
+	{
+		float lift = 0, grav;
+		//calculate acceleration due to drag, lift and gravity
+		//drag works in the opposite direction of velocity
+		Vector acc = vel * -(vel.Length() * info.m_flRelativeDrag * sv_simulatedbullets_drag.GetFloat());
+
+		//lastly subtract gravity
+		grav = -sv_gravity.GetFloat();
+		acc.z += grav;
+
+		//update velocity and position
+		vel += acc*dt;
+		oldpos = pos;
+		pos += vel*dt;
+
+		z_vel_offset += (lift + grav) * dt;
+		z_pos_offset += z_vel_offset * dt;
+
+		Vector delta = pos - info.m_vecSrc;
+		//Msg( "lift: %f, grav: %f, z_vel_offset: %f, z_pos_offset: %.2f (%.2f m), distance: %.2f (%.2f m)\n", lift, grav, z_vel_offset, z_pos_offset, z_pos_offset * 0.0254, pos.DistTo(info.m_vecSrc), pos.DistTo(info.m_vecSrc) * 0.0254 );
+
+		//trace from oldpos to pos an see if we hit something
+		AI_TraceLine(oldpos, pos, mask, filter, tr);
+
+		if( tr->DidHit() )
+		{
+			//we hit something
+			//TODO: take info.m_flConstantDamageRange into consideration
+			//TODO: modify tr->start & endpos
+			//Msg( "tr->DidHit(): %f s, %f units\n", t, pos.DistTo(info.m_vecSrc) );
+
+			//make up reasonable startpos and fraction
+			tr->startpos = info.m_vecSrc;
+			tr->fraction = tr->endpos.DistTo(info.m_vecSrc) / info.m_flDistance;
+
+			//return proper damage modifier
+			if( tr->endpos.DistTo(info.m_vecSrc) < info.m_flConstantDamageRange )
+				return 1;
+			else
+			{
+				float v = vel.Length();
+				float m = v*v / (info.m_flMuzzleVelocity*info.m_flMuzzleVelocity);
+
+				//make sure we don't end up with modifier > 1 if velocity increased
+				return m > 1 ? 1 : m;
+			}
+		}
+	}
+
+	//Msg( "hit nothing\n" );
+
+	return 0;
+}
+//
+
 void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 {
 	static int	tracerCount;
@@ -1608,7 +1718,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #endif
 
 #if defined( GAME_DLL )
-	if( IsPlayer() )
+	/*if( IsPlayer() )
 	{
 		CBasePlayer *pPlayer = dynamic_cast<CBasePlayer*>(this);
 
@@ -1627,7 +1737,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 
 			pPlayer->RumbleEffect( rumbleEffect, 0, RUMBLE_FLAG_RESTART );
 		}
-	}
+	}*/
 #endif// GAME_DLL
 
 	int iPlayerDamage = info.m_iPlayerDamage;
@@ -1659,6 +1769,8 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	traceFilter.SetPassEntity( this ); // Standard pass entity for THIS so that it can be easily removed from the list after passing through a portal
 	traceFilter.AddEntityToIgnore( info.m_pAdditionalIgnoreEnt );
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+// BG2 - VisualMelon - Porting - START
 #if defined( HL2_EPISODIC ) && defined( GAME_DLL )
 	// FIXME: We need to emulate this same behavior on the client as well -- jdw
 	// Also ignore a vehicle we're a passenger in
@@ -1667,6 +1779,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		traceFilter.AddEntityToIgnore( MyCombatCharacterPointer()->GetVehicleEntity() );
 	}
 #endif // SERVER_DLL
+// BG2 - VisualMelon - Porting - END
 
 	bool bUnderwaterBullets = ShouldDrawUnderwaterBulletBubbles();
 	bool bStartedInWater = false;
@@ -1693,7 +1806,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	bool bDoImpacts = false;
 	bool bDoTracers = false;
 	
-	float flCumulativeDamage = 0.0f;
+	//float flCumulativeDamage = 0.0f;
 
 	for (int iShot = 0; iShot < info.m_iShots; iShot++)
 	{
@@ -1725,7 +1838,14 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		float fPortalFraction = 2.0f;
 #endif
 
-
+		//BG2 - Tjoppen - arcscan bullets
+		float damageFactor = 1;
+		if( info.m_bArc )
+		{
+			damageFactor = BG2_TraceArc( info, vecDir, MASK_SHOT, &traceFilter, &tr );
+		}
+		else
+		//
 		if( IsPlayer() && info.m_iShots > 1 && iShot % 2 )
 		{
 			// Half of the shotgun pellets are hulls that make it easier to hit targets with the shotgun.
@@ -1743,6 +1863,10 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		}
 		else
 		{
+			
+			// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+			// BG2 - VisualMelon - Porting - START
+			/*
 #ifdef PORTAL
 			Ray_t rayBullet;
 			rayBullet.Init( info.m_vecSrc, vecEnd );
@@ -1763,8 +1887,10 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				AI_TraceLine(info.m_vecSrc, vecEnd, MASK_SHOT, &traceFilter, &tr);
 			}
 #else
+			*/
+			// BG2 - VisualMelon - Porting - END
 			AI_TraceLine(info.m_vecSrc, vecEnd, MASK_SHOT, &traceFilter, &tr);
-#endif //#ifdef PORTAL
+//#endif //#ifdef PORTAL // BG2 - VisualMelon - Porting - Not in 2007 code base - commented
 		}
 
 		// Tracker 70354/63250:  ywb 8/2/07
@@ -1778,14 +1904,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 			tr.fraction = 0.0f;
 		}
 
-	// bullet's final direction can be changed by passing through a portal
-#ifdef PORTAL
-		if ( !tr.startsolid )
-		{
-			vecDir = tr.endpos - tr.startpos;
-			VectorNormalize( vecDir );
-		}
-#endif
+// BG2 - VisualMelon - Porting - Deleted stuff marked PORTAL
 
 #ifdef GAME_DLL
 		if ( ai_debug_shoot_positions.GetBool() )
@@ -1798,24 +1917,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 			Vector vBubbleStart = info.m_vecSrc;
 			Vector vBubbleEnd = tr.endpos;
 
-#ifdef PORTAL
-			if ( pShootThroughPortal )
-			{
-				vBubbleEnd = info.m_vecSrc + ( vecEnd - info.m_vecSrc ) * fPortalFraction;
-			}
-#endif //#ifdef PORTAL
+// BG2 - VisualMelon - Porting - Deleted stuff marked PORTAL
 
 			CreateBubbleTrailTracer( vBubbleStart, vBubbleEnd, vecDir );
 			
-#ifdef PORTAL
-			if ( pShootThroughPortal )
-			{
-				Vector vTransformedIntersection;
-				UTIL_Portal_PointTransform( pShootThroughPortal->MatrixThisToLinked(), vBubbleEnd, vTransformedIntersection );
-
-				CreateBubbleTrailTracer( vTransformedIntersection, tr.endpos, vecDir );
-			}
-#endif //#ifdef PORTAL
+// BG2 - VisualMelon - Porting - Deleted stuff marked PORTAL
 
 #endif //#ifdef GAME_DLL
 			bHitWater = true;
@@ -1869,17 +1975,17 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 					flActualDamage = iPlayerDamage;
 				}
 #ifdef GAME_DLL
-				else if ( tr.m_pEnt->GetServerVehicle() )
+				/*else if ( tr.m_pEnt->GetServerVehicle() )
 				{
 					if ( tr.m_pEnt->GetServerVehicle()->GetPassenger() && tr.m_pEnt->GetServerVehicle()->GetPassenger()->IsPlayer() )
 					{
 						flActualDamage = iPlayerDamage;
 					}
-				}
+				}*/
 #endif
 			}
 
-			int nActualDamageType = nDamageType;
+			int nActualDamageType = nDamageType; // BG2 - VisualMelon - Porting - was an integer in 2007
 			if ( flActualDamage == 0.0 )
 			{
 				flActualDamage = g_pGameRules->GetAmmoDamage( pAttacker, tr.m_pEnt, info.m_iAmmoType );
@@ -1891,18 +1997,26 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 
 			if ( !bHitWater || ((info.m_nFlags & FIRE_BULLETS_DONT_HIT_UNDERWATER) == 0) )
 			{
+				//BG2 - Tjoppen - damage based on range
+				//Msg( "damageFactor = %f, flActualDamage: %f -> %f\n", damageFactor , flActualDamage, flActualDamage*damageFactor );
+				flActualDamage *= damageFactor;
+				//
+
 				// Damage specified by function parameter
 				CTakeDamageInfo dmgInfo( this, pAttacker, flActualDamage, nActualDamageType );
 				ModifyFireBulletsDamage( &dmgInfo );
 				CalculateBulletDamageForce( &dmgInfo, info.m_iAmmoType, vecDir, tr.endpos );
-				dmgInfo.ScaleDamageForce( info.m_flDamageForceScale );
+				//BG2 - Tjoppen - don't send airborne players flying
+				if( !(tr.m_pEnt->GetFlags() & FL_ONGROUND) )
+					dmgInfo.ScaleDamageForce( 0.001 );
+				//
 				dmgInfo.SetAmmoType( info.m_iAmmoType );
 				tr.m_pEnt->DispatchTraceAttack( dmgInfo, vecDir, &tr );
 			
-				if ( ToBaseCombatCharacter( tr.m_pEnt ) )
+				/*if ( ToBaseCombatCharacter( tr.m_pEnt ) )
 				{
 					flCumulativeDamage += dmgInfo.GetDamage();
-				}
+				}*/
 
 				if ( bStartedInWater || !bHitWater || (info.m_nFlags & FIRE_BULLETS_ALLOW_WATER_SURFACE_IMPACTS) )
 				{
@@ -1963,37 +2077,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				Tracer = tr;
 				Tracer.endpos = vecTracerDest;
 
-#ifdef PORTAL
-				if ( pShootThroughPortal )
-				{
-					Tracer.endpos = info.m_vecSrc + ( vecEnd - info.m_vecSrc ) * fPortalFraction;
-				}
-#endif //#ifdef PORTAL
+// BG2 - VisualMelon - Porting - Deleted stuff marked PORTAL
 
 				MakeTracer( vecTracerSrc, Tracer, pAmmoDef->TracerType(info.m_iAmmoType) );
 
-#ifdef PORTAL
-				if ( pShootThroughPortal )
-				{
-					Vector vTransformedIntersection;
-					UTIL_Portal_PointTransform( pShootThroughPortal->MatrixThisToLinked(), Tracer.endpos, vTransformedIntersection );
-					ComputeTracerStartPosition( vTransformedIntersection, &vecTracerSrc );
-
-					Tracer.endpos = vecTracerDest;
-
-					MakeTracer( vecTracerSrc, Tracer, pAmmoDef->TracerType(info.m_iAmmoType) );
-
-					// Shooting through a portal, the damage direction is translated through the passed-through portal
-					// so the damage indicator hud animation is correct
-					Vector vDmgOriginThroughPortal;
-					UTIL_Portal_PointTransform( pShootThroughPortal->MatrixThisToLinked(), info.m_vecSrc, vDmgOriginThroughPortal );
-					g_MultiDamage.SetDamagePosition ( vDmgOriginThroughPortal );
-				}
-				else
-				{
-					g_MultiDamage.SetDamagePosition ( info.m_vecSrc );
-				}
-#endif //#ifdef PORTAL
+// BG2 - VisualMelon - Porting - Deleted stuff marked PORTAL
 			}
 			else
 			{
@@ -2024,12 +2112,12 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #ifdef GAME_DLL
 	ApplyMultiDamage();
 
-	if ( IsPlayer() && flCumulativeDamage > 0.0f )
+	/*if ( IsPlayer() && flCumulativeDamage > 0.0f )
 	{
 		CBasePlayer *pPlayer = static_cast< CBasePlayer * >( this );
 		CTakeDamageInfo dmgInfo( this, pAttacker, flCumulativeDamage, nDamageType );
 		gamestats->Event_WeaponHit( pPlayer, info.m_bPrimaryAttack, pPlayer->GetActiveWeapon()->GetClassname(), dmgInfo );
-	}
+	}*/
 #endif
 }
 
@@ -2125,6 +2213,8 @@ void CBaseEntity::TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir
 
 	if ( m_takedamage )
 	{
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - commented
+		// BG2 - VisualMelon - Porting - START
 #ifdef GAME_DLL
 		if ( pAccumulator )
 		{
@@ -2132,6 +2222,7 @@ void CBaseEntity::TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir
 		}
 		else
 #endif // GAME_DLL
+		// BG2 - VisualMelon - Porting - END
 		{
 			AddMultiDamage( info, this );
 		}
@@ -2334,6 +2425,8 @@ const char* CBaseEntity::GetTracerType()
 	return NULL;
 }
 
+// BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK I guess... only modified the param
+// BG2 - VisualMelon - Porting - START
 void CBaseEntity::ModifyEmitSoundParams( EmitSound_t &params )
 {
 #ifdef CLIENT_DLL
@@ -2343,6 +2436,7 @@ void CBaseEntity::ModifyEmitSoundParams( EmitSound_t &params )
 	}
 #endif
 }
+// BG2 - VisualMelon - Porting - END
 
 //-----------------------------------------------------------------------------
 // These methods encapsulate MOVETYPE_FOLLOW, which became obsolete
@@ -2384,6 +2478,8 @@ void CBaseEntity::ApplyLocalVelocityImpulse( const Vector &inVecImpulse )
 	{
 		Vector vecImpulse = inVecImpulse;
 
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK
+		// BG2 - VisualMelon - Porting - START
 		// Safety check against receive a huge impulse, which can explode physics
 		switch ( CheckEntityVelocity( vecImpulse ) )
 		{
@@ -2398,6 +2494,7 @@ void CBaseEntity::ApplyLocalVelocityImpulse( const Vector &inVecImpulse )
 				}
 				break;
 		}
+		// BG2 - VisualMelon - Porting - END
 
 		if ( GetMoveType() == MOVETYPE_VPHYSICS )
 		{
@@ -2419,6 +2516,8 @@ void CBaseEntity::ApplyAbsVelocityImpulse( const Vector &inVecImpulse )
 	{
 		Vector vecImpulse = inVecImpulse;
 
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK
+		// BG2 - VisualMelon - Porting - START
 		// Safety check against receive a huge impulse, which can explode physics
 		switch ( CheckEntityVelocity( vecImpulse ) )
 		{
@@ -2433,6 +2532,7 @@ void CBaseEntity::ApplyAbsVelocityImpulse( const Vector &inVecImpulse )
 				}
 				break;
 		}
+		// BG2 - VisualMelon - Porting - END
 
 		if ( GetMoveType() == MOVETYPE_VPHYSICS )
 		{
@@ -2452,6 +2552,8 @@ void CBaseEntity::ApplyLocalAngularVelocityImpulse( const AngularImpulse &angImp
 {
 	if (angImpulse != vec3_origin )
 	{
+		// BG2 - VisualMelon - Porting - Not in 2007 code base - looks OK
+		// BG2 - VisualMelon - Porting - START
 		// Safety check against receive a huge impulse, which can explode physics
 		if ( !IsEntityAngularVelocityReasonable( angImpulse ) )
 		{
@@ -2459,6 +2561,7 @@ void CBaseEntity::ApplyLocalAngularVelocityImpulse( const AngularImpulse &angImp
 			Assert( false );
 			return;
 		}
+		// BG2 - VisualMelon - Porting - END
 
 		if ( GetMoveType() == MOVETYPE_VPHYSICS )
 		{
